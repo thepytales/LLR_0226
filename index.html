@@ -10,22 +10,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
     
     <script>
-      // Robuste Panel Toggle Logik (Akkordeon-Effekt)
+      // Robuste Panel Toggle Logik
       function togglePanel(header) {
         const parent = header.parentElement;
         const wasClosed = parent.classList.contains('collapsed');
-        
-        // Finde die Eltern-Sidebar (links oder rechts)
         const sidebar = parent.closest('.sidebar, .sidebar-right');
-        
         if(sidebar) {
-            // Alle anderen Panels in dieser Sidebar schließen
             sidebar.querySelectorAll('.panel').forEach(p => {
                 if(p !== parent) p.classList.add('collapsed');
             });
         }
-        
-        // Das geklickte Panel toggeln
         if (wasClosed) parent.classList.remove('collapsed');
         else parent.classList.add('collapsed');
       }
@@ -51,38 +45,170 @@
         margin: 0; overflow: hidden; 
         font-family: 'Inter', "Segoe UI", sans-serif; 
         color: var(--text); background: var(--bg-dark); 
-        user-select: none;
-        font-size: 14px;
+        user-select: none; font-size: 14px;
       }
       
-      canvas { 
-        display: block; width: 100vw; height: 100vh; outline: none; 
-        position: absolute; top: 0; left: 0; z-index: 0;
-      }
+      /* Canvas für 3D Raum */
+      canvas { display: block; width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 0; }
       
-      /* Accessibility Filter Classes */
+      /* Filter Classes */
       body.filter-grayscale canvas { filter: grayscale(100%); }
       body.filter-sepia canvas { filter: sepia(100%); }
       body.filter-invert canvas { filter: invert(100%); }
       
-      body.high-contrast {
-        --bg-dark: #000000;
-        --bg-panel: #000000;
-        --border: #ffffff;
-        --primary: #ffff00;
-        --text: #ffffff;
-        --text-light: #ffffff;
-        --btn-bg: #000000;
-      }
-      body.high-contrast button { border: 2px solid white; color: white; font-weight:bold; }
-      body.high-contrast button.primary { background: #ffff00; color: #000000 !important; border-color: #ffff00; }
-      body.high-contrast button:hover { background: #333; color: white !important; }
-      body.high-contrast button.primary:hover { background: #cccc00; color: black !important; }
-      
+      /* === UI LAYER === */
       #ui-layer { 
         position: absolute; inset: 0; pointer-events: none; z-index: 10;
         display: flex; flex-direction: column; justify-content: space-between;
       }
+
+      /* === BACKGROUND ANIMATION CANVAS === */
+      #bg-canvas {
+          position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+          z-index: 1; pointer-events: auto; /* Mausinteraktion erlauben */
+      }
+
+      /* === HOMESCREEN REDESIGN === */
+      #homescreen { 
+        position: absolute; inset: 0; 
+        background: radial-gradient(circle at center, #2b2b2b 0%, #0f0f0f 100%);
+        z-index: 5000; 
+        display: flex; align-items: center; justify-content: center;
+        overflow: hidden;
+      }
+
+      /* Container im 16:9 Look */
+      .home-container {
+          position: relative; z-index: 2;
+          width: 900px; max-width: 95vw;
+          min-height: 500px;
+          display: grid;
+          grid-template-columns: 1.2fr 1fr; /* Links breiter als rechts */
+          background: rgba(30, 30, 30, 0.75);
+          backdrop-filter: blur(15px);
+          -webkit-backdrop-filter: blur(15px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 24px;
+          box-shadow: 0 40px 80px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.05);
+          overflow: hidden;
+          opacity: 0; /* Für Animation */
+          transform: translateY(30px);
+          animation: slideUpFade 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.2s;
+      }
+
+      @keyframes slideUpFade {
+          to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* Linke Spalte: Branding & Aktionen */
+      .home-left {
+          padding: 50px;
+          display: flex; flex-direction: column; justify-content: center;
+          border-right: 1px solid rgba(255,255,255,0.05);
+          position: relative;
+      }
+      
+      /* Rechte Spalte: Infos & Settings */
+      .home-right {
+          padding: 50px;
+          background: rgba(0,0,0,0.2);
+          display: flex; flex-direction: column; justify-content: space-between;
+      }
+
+      .home-title-large {
+          font-size: 3em; font-weight: 800; color: white;
+          margin: 0; letter-spacing: -1px;
+          background: linear-gradient(135deg, #fff 30%, #007acc 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          margin-bottom: 10px;
+      }
+      .home-subtitle {
+          font-size: 1.1em; color: #aaa; font-weight: 300; margin-bottom: 40px;
+          line-height: 1.5;
+      }
+
+      /* Buttons neu gestylt */
+      .action-buttons { display: flex; flex-direction: column; gap: 15px; }
+      
+      .big-btn {
+          padding: 18px 24px; border-radius: 12px; border: none;
+          background: linear-gradient(90deg, #333, #3a3a3a);
+          color: white; font-size: 15px; font-weight: 600; cursor: pointer;
+          display: flex; align-items: center; justify-content: space-between;
+          transition: all 0.3s ease;
+          border: 1px solid rgba(255,255,255,0.1);
+          position: relative; overflow: hidden;
+      }
+      .big-btn::before {
+          content: ""; position: absolute; top:0; left:0; width: 4px; height: 100%;
+          background: var(--primary); opacity: 0; transition: opacity 0.3s;
+      }
+      .big-btn:hover {
+          transform: translateX(5px);
+          background: #444;
+          box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+      }
+      .big-btn:hover::before { opacity: 1; }
+      .big-btn span { z-index: 1; }
+      .big-btn .arrow { font-size: 18px; color: var(--primary); transition: transform 0.3s; }
+      .big-btn:hover .arrow { transform: translateX(5px); }
+
+      .big-btn.ghost {
+          background: transparent; border: 1px solid rgba(255,255,255,0.2);
+      }
+      .big-btn.ghost:hover { background: rgba(255,255,255,0.05); }
+
+      /* Rechte Seite Content */
+      .feature-box {
+          margin-bottom: 30px;
+      }
+      .section-label {
+          font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px;
+          color: var(--primary); font-weight: 700; margin-bottom: 15px;
+          display: flex; align-items: center; gap: 10px;
+      }
+      .section-label::after {
+          content: ""; height: 1px; flex-grow: 1; background: rgba(255,255,255,0.1);
+      }
+
+      .feature-list { list-style: none; padding: 0; margin: 0; }
+      .feature-item {
+          display: flex; gap: 12px; margin-bottom: 15px;
+          font-size: 13px; color: #ccc; line-height: 1.4;
+      }
+      .feature-icon { 
+          color: var(--warning); background: rgba(212, 167, 44, 0.1); 
+          width: 24px; height: 24px; border-radius: 6px; 
+          display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      }
+
+      .settings-mini {
+          background: rgba(255,255,255,0.03);
+          padding: 15px; border-radius: 8px;
+      }
+      .mini-row {
+          display: flex; justify-content: space-between; align-items: center;
+          margin-bottom: 10px; font-size: 12px; color: #aaa;
+      }
+      .mini-row:last-child { margin-bottom: 0; }
+
+      .feedback-area {
+          margin-top: auto; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);
+          text-align: center; font-size: 12px; color: #666;
+      }
+      .feedback-area a { color: #888; text-decoration: none; border-bottom: 1px dotted #666; transition: 0.2s; }
+      .feedback-area a:hover { color: var(--primary); border-color: var(--primary); }
+
+      /* Animation Delays für Staggering */
+      .stagger-1 { opacity: 0; animation: fadeIn 0.5s ease forwards 0.5s; }
+      .stagger-2 { opacity: 0; animation: fadeIn 0.5s ease forwards 0.7s; }
+      .stagger-3 { opacity: 0; animation: fadeIn 0.5s ease forwards 0.9s; }
+      .stagger-4 { opacity: 0; animation: fadeIn 0.5s ease forwards 1.1s; }
+
+      @keyframes fadeIn { to { opacity: 1; } }
+
+      /* === RESTLICHE CSS (UI LAYER, MODALS, ETC) === */
       
       /* TOP BAR */
       .top-bar {
@@ -111,7 +237,6 @@
       button.danger:hover { background: var(--danger); color: white; }
       button.danger.solid { background: var(--danger); color: white; }
       
-      /* Icon Button (Home) */
       button.icon-btn {
         padding: 6px; display: flex; align-items: center; justify-content: center;
         background: transparent; border-color: #555; color: #ccc; width: 34px; height: 34px;
@@ -119,9 +244,7 @@
       button.icon-btn:hover { background: #333; color: white; border-color: #777; }
       
       button.active { 
-        background: var(--primary); 
-        border-color: var(--text-light); 
-        color: white; 
+        background: var(--primary); border-color: var(--text-light); color: white; 
         box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
       }
 
@@ -129,8 +252,7 @@
       .sidebar {
         position: absolute; top: 70px; left: 20px; bottom: 20px; width: 340px;
         display: flex; flex-direction: column; gap: 10px; pointer-events: none;
-        overflow-y: auto; padding-right: 5px;
-        z-index: 100;
+        overflow-y: auto; padding-right: 5px; z-index: 100;
       }
       .sidebar::-webkit-scrollbar { width: 4px; }
       .sidebar::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
@@ -138,8 +260,7 @@
       .sidebar-right {
         position: absolute; top: 70px; right: 20px; bottom: 20px; width: 300px;
         display: flex; flex-direction: column; gap: 10px; pointer-events: none;
-        overflow-y: auto; padding-left: 5px;
-        z-index: 40;
+        overflow-y: auto; padding-left: 5px; z-index: 40;
       }
       .sidebar-right::-webkit-scrollbar { width: 4px; }
       .sidebar-right::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
@@ -214,17 +335,8 @@
 
       /* === ON-SCREEN CONTROLS === */
       #onscreen-controls {
-        display: none; 
-        position: absolute;
-        bottom: 20px;
-        right: 20px;
-        width: 180px;
-        height: 180px;
-        pointer-events: none; 
-        z-index: 2000;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
+        display: none; position: absolute; bottom: 20px; right: 20px; width: 180px; height: 180px;
+        pointer-events: none; z-index: 2000; flex-direction: column; align-items: center; justify-content: center;
       }
       #onscreen-controls.visible { display: flex; }
       .d-pad {
@@ -296,75 +408,12 @@
       }
       @keyframes spin { 100% { transform: rotate(360deg); } }
 
-      /* === PROFESSIONAL HOMESCREEN === */
-      #homescreen { 
-        position: absolute; inset: 0; 
-        background: linear-gradient(135deg, #121212 0%, #1e3a5f 100%); 
-        z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; 
-      }
-      .home-card { 
-        background: #252526; border: 1px solid var(--border); padding: 50px; 
-        border-radius: 16px; box-shadow: 0 30px 60px rgba(0,0,0,0.6); 
-        text-align: center; width: 420px; 
-        position: relative; overflow: hidden;
-      }
-      .home-card::before {
-          content: ""; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: var(--primary);
-      }
-      .home-title { font-size: 2.4em; font-weight: 700; color: white; margin-bottom: 10px; letter-spacing: -0.5px; }
-      .home-subtitle { color: #888; font-size: 1.1em; margin-bottom: 40px; font-weight: 300; }
-      
-      .home-btn { 
-        display: block; width: 100%; padding: 18px; margin-bottom: 15px; 
-        background: var(--btn-bg); border: 1px solid #444; color: white; 
-        border-radius: 8px; cursor: pointer; text-align: center; 
-        font-size: 16px; font-weight: 500; transition: all 0.2s; 
-      }
-      .home-btn:hover { background: var(--primary); border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-      .home-btn.secondary { background: transparent; border: 1px solid #555; font-size: 14px; padding: 12px; }
-      .home-btn.secondary:hover { background: #333; border-color: #777; transform: none; box-shadow: none; }
+      /* BODY high contrast overrides */
+      body.high-contrast .home-container { background: black; border: 2px solid white; }
+      body.high-contrast .big-btn { background: black; border: 2px solid white; color: white; }
+      body.high-contrast .big-btn:hover { background: #333; }
+      body.high-contrast .home-title-large { background: none; color: white; -webkit-text-fill-color: white; }
 
-      .home-settings { margin-top: 30px; padding-top: 20px; border-top: 1px solid #333; text-align: left; }
-      .start-setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 13px; color: #aaa; }
-
-      /* Homescreen Extra Sections (Outlook/Feedback) */
-      .home-extra-section {
-          margin-top: 25px; padding-top: 20px; border-top: 1px solid #333;
-          text-align: left;
-      }
-      .home-extra-title {
-          font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
-          color: var(--primary); font-weight: 700; margin-bottom: 10px;
-      }
-      .home-feature-list {
-          font-size: 13px; color: #aaa; line-height: 1.5;
-          margin-bottom: 15px;
-      }
-      .home-feature-item {
-          display: flex; align-items: flex-start; margin-bottom: 8px;
-      }
-      .home-feature-icon { margin-right: 8px; font-size: 14px; }
-      
-      .feedback-link {
-          display: inline-block; color: #888; text-decoration: none; 
-          font-size: 12px; border-bottom: 1px dotted #555;
-          transition: color 0.2s;
-      }
-      .feedback-link:hover { color: var(--primary); border-bottom-color: var(--primary); }
-
-      /* VISION SIMULATION FILTERS */
-      body.sim-blur canvas { filter: blur(4px) contrast(1.2); }
-      body.sim-severe canvas { filter: blur(8px) contrast(0.8) brightness(0.7); }
-      body.sim-blind canvas { filter: brightness(0); background: black; }
-
-      #vision-overlay {
-        position: absolute; inset: 0; pointer-events: none; z-index: 9000;
-        background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.9) 35%, black 60%);
-        display: none;
-      }
-      body.sim-tunnel #vision-overlay { display: block; }
-      .vision-hint { font-size: 11px; color: var(--warning); margin-bottom: 8px; font-style: italic; }
-      
       /* Tutorial Highlight */
       .tutorial-highlight { 
           position: relative; z-index: 9001; 
@@ -397,7 +446,6 @@
         </div>
         <div class="setting-row">
           <label>Erweiterte Steuerung (On-Screen)</label>
-          <!-- Checked by default now -->
           <label class="switch"><input type="checkbox" id="set-controls" onchange="app.updateSettings()" checked><span class="slider"></span></label>
         </div>
         <div class="setting-row">
@@ -433,50 +481,85 @@
       </div>
     </div>
 
-    <!-- PROFESSIONELLER HOMESCREEN -->
+    <!-- === PROFESSIONELLER HOMESCREEN (REDESIGN 16:9) === -->
     <div id="homescreen">
-      <div class="home-card">
-        <div class="home-title">ELMeKS.digital</div>
-        <div class="home-subtitle">Virtuelle Raumplanung & Barrierefreiheits-Check</div>
-        
-        <button class="home-btn" onclick="app.startSession()">Neuen Raum planen</button>
-        <button class="home-btn" onclick="document.getElementById('file-input').click()">Vorhandenen Plan laden</button>
-        <button class="home-btn secondary" onclick="app.startTutorial()">Tutorial starten</button>
+      <!-- Hintergrund Animation Canvas -->
+      <canvas id="bg-canvas"></canvas>
 
-        <!-- Ausblick & Feedback Section -->
-        <div class="home-extra-section">
-            <div class="home-extra-title">Ausblick & kommende Features</div>
-            <div class="home-feature-list">
-                <div class="home-feature-item">
-                    <span class="home-feature-icon">☀️</span>
-                    <span><strong>Licht & Blendungssimulation:</strong> Automatische Erkennung von Blendgefahr auf Bildschirmen basierend auf Fensterpositionen.</span>
-                </div>
-                <div class="home-feature-item">
-                    <span class="home-feature-icon">📏</span>
-                    <span><strong>Interaktiver Laufwege-Check:</strong> Automatische Markierung von Engstellen (< 90cm) für Rollstühle auf Fluchtwegen.</span>
-                </div>
+      <div class="home-container">
+        <!-- Linke Seite: Branding & Aktionen -->
+        <div class="home-left stagger-1">
+            <div style="margin-bottom: 40px;">
+                <div class="home-title-large">ELMeKS.digital</div>
+                <div class="home-subtitle">Virtuelle Raumplanung & <br>Barrierefreiheits-Check für Bildungseinrichtungen.</div>
             </div>
             
-            <div style="text-align: center; border-top: 1px solid #333; padding-top: 10px;">
-                <span style="font-size:12px; color:#666;">Feedback & Vorschläge? </span>
-                <a href="mailto:thepytales@gmail.com" class="feedback-link">Schreiben Sie uns!</a>
+            <div class="action-buttons stagger-2">
+                <button class="big-btn" onclick="app.startSession()">
+                    <span>Neuen Raum planen</span>
+                    <span class="arrow">→</span>
+                </button>
+                <button class="big-btn ghost" onclick="document.getElementById('file-input').click()">
+                    <span>Vorhandenen Plan laden</span>
+                    <span style="font-size:12px;">📂</span>
+                </button>
+                <button class="big-btn ghost" onclick="app.startTutorial()">
+                    <span>Tutorial starten</span>
+                    <span style="font-size:12px;">🎓</span>
+                </button>
             </div>
         </div>
 
-        <div class="home-settings">
-            <div class="start-setting-row">
-                <span>Hochkontrast-Modus</span>
-                <label class="switch"><input type="checkbox" id="start-high-contrast" onchange="app.updateSettings()"><span class="slider"></span></label>
+        <!-- Rechte Seite: Features & Settings -->
+        <div class="home-right stagger-3">
+            
+            <!-- Ausblick -->
+            <div class="feature-box">
+                <div class="section-label">Kommende Funktionen</div>
+                <ul class="feature-list">
+                    <li class="feature-item">
+                        <div class="feature-icon">☀</div>
+                        <div>
+                            <strong>Licht & Blendung:</strong> <br>
+                            Automatische Warnung bei Blendgefahr durch Fenster (< 30° Blickwinkel).
+                        </div>
+                    </li>
+                    <li class="feature-item">
+                        <div class="feature-icon">📏</div>
+                        <div>
+                            <strong>Laufwege-Check:</strong> <br>
+                            Live-Überprüfung von Engstellen (< 90cm) entlang definierter Fluchtwege.
+                        </div>
+                    </li>
+                </ul>
             </div>
-            <div class="start-setting-row">
-                <span>Farbfilter (z.B. Graustufen)</span>
-                <select id="start-color-filter" onchange="app.updateSettings()" style="background:#333; border:1px solid #555; color:white; padding:2px;">
-                    <option value="none">Keiner</option>
-                    <option value="grayscale">Graustufen</option>
-                    <option value="sepia">Sepia</option>
-                    <option value="invert">Invertiert</option>
-                </select>
+
+            <!-- Mini Settings -->
+            <div class="feature-box stagger-4">
+                <div class="section-label">Schnell-Einstellungen</div>
+                <div class="settings-mini">
+                    <div class="mini-row">
+                        <span>Hochkontrast</span>
+                        <label class="switch"><input type="checkbox" id="start-high-contrast" onchange="app.updateSettings()"><span class="slider"></span></label>
+                    </div>
+                    <div class="mini-row">
+                        <span>Farbfilter</span>
+                        <select id="start-color-filter" onchange="app.updateSettings()" style="background:#444; border:none; color:white; padding:2px; border-radius:4px;">
+                            <option value="none">Keiner</option>
+                            <option value="grayscale">Graustufen</option>
+                            <option value="sepia">Sepia</option>
+                            <option value="invert">Invertiert</option>
+                        </select>
+                    </div>
+                </div>
             </div>
+
+            <!-- Feedback Footer -->
+            <div class="feedback-area">
+                Haben Sie Ideen oder Wünsche? <br>
+                <a href="mailto:thepytales@gmail.com">Schreiben Sie uns!</a>
+            </div>
+
         </div>
       </div>
     </div>
@@ -485,7 +568,7 @@
     <div id="ui-layer" style="display:none;">
       <!-- Top Navigation -->
       <div class="top-bar">
-        <!-- Professional Home Icon Button (SVG) -->
+        <!-- Home Icon Button -->
         <button onclick="app.confirmGoHome()" title="Hauptmenü" class="icon-btn" style="margin-right:15px;">
            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
         </button>
@@ -493,7 +576,6 @@
         <div class="brand">ELMeKS.digital</div>
         <select id="room-select">
           <option value="raummodell_leer.glb" selected>LLR (50m²)</option>
-          <!-- Update to new GLB model -->
           <option value="50qm_möbliertglb.glb">LLR Möbliert (Standard)</option>
           <option value="leer_70qm.glb">Großer Raum (70m²)</option>
           <option value="leer_30qm.glb">Kleiner Raum (30m²)</option>
@@ -551,10 +633,8 @@
               <button onclick="app.addFurniture('chair')">Stuhl</button>
               <button onclick="app.addFurniture('tano')">Tano-Tisch</button>
               <button onclick="app.addFurniture('triangle')">Dreieck</button>
-              <!-- NEW TABLE BUTTONS -->
               <button onclick="app.addFurniture('table_square')">Quadrat-Tisch</button>
               <button onclick="app.addFurniture('table_double')">2er Tisch</button>
-              <!-- NEW SOFA BUTTON -->
               <button onclick="app.addFurniture('sofa')">Sofa</button>
             </div>
 
@@ -563,10 +643,8 @@
               <button onclick="app.addFurniture('board')">Tafel</button>
               <button onclick="app.addFurniture('teacher')">Pult</button>
               <button onclick="app.addFurniture('cupboard')">Regal (Rund)</button>
-              <!-- NEW CABINET BUTTONS -->
               <button onclick="app.addFurniture('cabinet_short')">Schrank (Kurz)</button>
               <button onclick="app.addFurniture('cabinet_long')">Schrank (Lang)</button>
-              <!-- NEW LAPTOP BUTTON -->
               <button onclick="app.addFurniture('laptop')">Laptop</button>
             </div>
             
@@ -706,5 +784,125 @@
     <!-- Overlay für Seh-Simulation -->
     <div id="vision-overlay"></div>
     <script type="module" src="script.js"></script>
+
+    <!-- HINTERGRUND SCRIPT -->
+    <script>
+      (function() {
+          const canvas = document.getElementById('bg-canvas');
+          const ctx = canvas.getContext('2d');
+          
+          let width, height;
+          let particles = [];
+          
+          // Maus Position
+          const mouse = { x: null, y: null };
+          
+          // Konfiguration
+          const particleCount = 60;
+          const connectionDist = 120;
+          const mouseDist = 150;
+          
+          // Resize Handler
+          function resize() {
+              width = window.innerWidth;
+              height = window.innerHeight;
+              canvas.width = width;
+              canvas.height = height;
+          }
+          window.addEventListener('resize', resize);
+          resize();
+          
+          // Maus Events
+          window.addEventListener('mousemove', (e) => {
+              mouse.x = e.x;
+              mouse.y = e.y;
+          });
+          
+          window.addEventListener('mouseleave', () => {
+              mouse.x = null;
+              mouse.y = null;
+          });
+
+          // Partikel Klasse
+          class Particle {
+              constructor() {
+                  this.x = Math.random() * width;
+                  this.y = Math.random() * height;
+                  this.vx = (Math.random() - 0.5) * 0.5;
+                  this.vy = (Math.random() - 0.5) * 0.5;
+                  this.size = Math.random() * 2 + 1;
+              }
+              
+              update() {
+                  this.x += this.vx;
+                  this.y += this.vy;
+                  
+                  // Wrap around screen
+                  if (this.x < 0) this.x = width;
+                  if (this.x > width) this.x = 0;
+                  if (this.y < 0) this.y = height;
+                  if (this.y > height) this.y = 0;
+              }
+              
+              draw() {
+                  ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                  ctx.beginPath();
+                  ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                  ctx.fill();
+              }
+          }
+          
+          // Init Particles
+          for (let i = 0; i < particleCount; i++) {
+              particles.push(new Particle());
+          }
+          
+          // Animation Loop
+          function animate() {
+              ctx.clearRect(0, 0, width, height);
+              
+              for (let i = 0; i < particles.length; i++) {
+                  particles[i].update();
+                  particles[i].draw();
+                  
+                  // Verbindungen zu anderen Partikeln
+                  for (let j = i; j < particles.length; j++) {
+                      const dx = particles[i].x - particles[j].x;
+                      const dy = particles[i].y - particles[j].y;
+                      const distance = Math.sqrt(dx * dx + dy * dy);
+                      
+                      if (distance < connectionDist) {
+                          ctx.strokeStyle = `rgba(255, 255, 255, ${0.1 - distance/connectionDist * 0.1})`;
+                          ctx.lineWidth = 1;
+                          ctx.beginPath();
+                          ctx.moveTo(particles[i].x, particles[i].y);
+                          ctx.lineTo(particles[j].x, particles[j].y);
+                          ctx.stroke();
+                      }
+                  }
+                  
+                  // Verbindung zur Maus
+                  if (mouse.x != null) {
+                      const dx = particles[i].x - mouse.x;
+                      const dy = particles[i].y - mouse.y;
+                      const distance = Math.sqrt(dx * dx + dy * dy);
+                      
+                      if (distance < mouseDist) {
+                          ctx.strokeStyle = `rgba(0, 122, 204, ${0.4 - distance/mouseDist * 0.4})`; // Cyan Farbe
+                          ctx.lineWidth = 1;
+                          ctx.beginPath();
+                          ctx.moveTo(particles[i].x, particles[i].y);
+                          ctx.lineTo(mouse.x, mouse.y);
+                          ctx.stroke();
+                      }
+                  }
+              }
+              
+              requestAnimationFrame(animate);
+          }
+          
+          animate();
+      })();
+    </script>
   </body>
 </html>
