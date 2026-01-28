@@ -4,13 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ELMeKS.digital Raumplaner</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- PDF Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
     
     <script>
-      // Robuste Panel Toggle Logik
       function togglePanel(header) {
         const parent = header.parentElement;
         const wasClosed = parent.classList.contains('collapsed');
@@ -27,28 +26,27 @@
 
     <style>
       :root { 
-        --bg-dark: #1e1e1e;
-        --bg-panel: #252526;
-        --border: #3e3e42;
-        --primary: #007acc; 
-        --primary-hover: #0062a3;
-        --text: #cccccc;
-        --text-light: #ffffff;
-        --danger: #d73a49;
-        --warning: #d4a72c;
-        --success: #2ea043;
-        --btn-bg: #333333;
-        --btn-hover: #444444;
+        --bg-dark: #0f1012;
+        --bg-panel: #1a1b1e;
+        --border: #2c2e33;
+        --primary: #3b82f6; /* Modernes Royal Blue */
+        --primary-glow: rgba(59, 130, 246, 0.5);
+        --text: #9ca3af;
+        --text-light: #f3f4f6;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+        --success: #10b981;
+        --btn-bg: #27272a;
       }
       
       body { 
         margin: 0; overflow: hidden; 
-        font-family: 'Inter', "Segoe UI", sans-serif; 
+        font-family: 'Inter', sans-serif; 
         color: var(--text); background: var(--bg-dark); 
         user-select: none; font-size: 14px;
+        -webkit-font-smoothing: antialiased;
       }
       
-      /* Canvas für 3D Raum */
       canvas { display: block; width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 0; }
       
       /* Filter Classes */
@@ -62,370 +60,463 @@
         display: flex; flex-direction: column; justify-content: space-between;
       }
 
-      /* === BACKGROUND ANIMATION CANVAS === */
+      /* === BACKGROUND CANVAS & GRID === */
       #bg-canvas {
           position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-          z-index: 1; pointer-events: auto; /* Mausinteraktion erlauben */
+          z-index: 1; pointer-events: auto;
+      }
+      
+      /* Technisches Raster Overlay - Stärker sichtbar */
+      .tech-grid-overlay {
+          position: absolute; inset: 0; z-index: 2; pointer-events: none;
+          background-size: 40px 40px;
+          background-image:
+            linear-gradient(to right, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+          mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+          -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
       }
 
       /* === HOMESCREEN REDESIGN === */
       #homescreen { 
         position: absolute; inset: 0; 
-        background: radial-gradient(circle at center, #2b2b2b 0%, #0f0f0f 100%);
+        background: radial-gradient(circle at 50% 50%, #1a1b1e 0%, #000000 100%);
         z-index: 5000; 
         display: flex; align-items: center; justify-content: center;
         overflow: hidden;
       }
 
-      /* Container im 16:9 Look */
+      /* Container 16:9 Glassmorphism High-End */
       .home-container {
-          position: relative; z-index: 2;
-          width: 900px; max-width: 95vw;
-          min-height: 500px;
+          position: relative; z-index: 10;
+          width: 960px; max-width: 95vw;
+          min-height: 540px;
           display: grid;
-          grid-template-columns: 1.2fr 1fr; /* Links breiter als rechts */
-          background: rgba(30, 30, 30, 0.75);
-          backdrop-filter: blur(15px);
-          -webkit-backdrop-filter: blur(15px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          grid-template-columns: 1.3fr 1fr;
+          background: rgba(20, 20, 23, 0.65);
+          backdrop-filter: blur(20px) saturate(180%);
+          -webkit-backdrop-filter: blur(20px) saturate(180%);
           border-radius: 24px;
-          box-shadow: 0 40px 80px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.05);
+          
+          /* Doppel-Border Effekt für 3D Tiefe */
+          box-shadow: 
+            0 0 0 1px rgba(255, 255, 255, 0.08), 
+            0 25px 50px -12px rgba(0, 0, 0, 0.8),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            
           overflow: hidden;
-          opacity: 0; /* Für Animation */
-          transform: translateY(30px);
-          animation: slideUpFade 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.2s;
+          opacity: 0; transform: translateY(20px) scale(0.98);
+          animation: enterUI 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.2s;
       }
 
-      @keyframes slideUpFade {
-          to { opacity: 1; transform: translateY(0); }
+      @keyframes enterUI {
+          to { opacity: 1; transform: translateY(0) scale(1); }
       }
 
-      /* Linke Spalte: Branding & Aktionen */
+      /* Linke Seite */
       .home-left {
-          padding: 50px;
+          padding: 60px;
           display: flex; flex-direction: column; justify-content: center;
-          border-right: 1px solid rgba(255,255,255,0.05);
+          border-right: 1px solid rgba(255,255,255,0.06);
           position: relative;
+          background: linear-gradient(180deg, rgba(255,255,255,0.01) 0%, transparent 100%);
       }
       
-      /* Rechte Spalte: Infos & Settings */
+      /* Rechte Seite */
       .home-right {
-          padding: 50px;
-          background: rgba(0,0,0,0.2);
+          padding: 60px;
+          background: rgba(0,0,0,0.3);
           display: flex; flex-direction: column; justify-content: space-between;
       }
 
+      /* Animierter Gradient Titel */
       .home-title-large {
-          font-size: 3em; font-weight: 800; color: white;
-          margin: 0; letter-spacing: -1px;
-          background: linear-gradient(135deg, #fff 30%, #007acc 100%);
+          font-size: 3.5em; font-weight: 800; color: white;
+          margin: 0 0 15px 0; letter-spacing: -1.5px; line-height: 1;
+          background: linear-gradient(90deg, #ffffff 0%, #a5c9ff 50%, #ffffff 100%);
+          background-size: 200% auto;
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
-          margin-bottom: 10px;
+          animation: shine 5s linear infinite;
       }
+      @keyframes shine { to { background-position: 200% center; } }
+
       .home-subtitle {
-          font-size: 1.1em; color: #aaa; font-weight: 300; margin-bottom: 40px;
-          line-height: 1.5;
+          font-size: 1.15em; color: #9ca3af; font-weight: 400; margin-bottom: 50px;
+          line-height: 1.6; max-width: 90%;
       }
 
-      /* Buttons neu gestylt */
-      .action-buttons { display: flex; flex-direction: column; gap: 15px; }
+      /* Premium Buttons */
+      .action-buttons { display: flex; flex-direction: column; gap: 16px; }
       
       .big-btn {
-          padding: 18px 24px; border-radius: 12px; border: none;
-          background: linear-gradient(90deg, #333, #3a3a3a);
+          padding: 20px 28px; border-radius: 14px; border: none;
+          background: #27272a;
           color: white; font-size: 15px; font-weight: 600; cursor: pointer;
           display: flex; align-items: center; justify-content: space-between;
-          transition: all 0.3s ease;
-          border: 1px solid rgba(255,255,255,0.1);
+          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+          border: 1px solid rgba(255,255,255,0.08);
           position: relative; overflow: hidden;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
       }
-      .big-btn::before {
-          content: ""; position: absolute; top:0; left:0; width: 4px; height: 100%;
-          background: var(--primary); opacity: 0; transition: opacity 0.3s;
+      
+      /* Primary Button Highlight */
+      .big-btn.highlight {
+          background: linear-gradient(135deg, var(--primary) 0%, #2563eb 100%);
+          border: 1px solid rgba(255,255,255,0.2);
+          box-shadow: 0 10px 25px -5px var(--primary-glow);
       }
-      .big-btn:hover {
+      .big-btn.highlight:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 15px 35px -5px var(--primary-glow);
+      }
+
+      /* Secondary Button Hover */
+      .big-btn.ghost:hover {
+          background: #3f3f46;
+          border-color: rgba(255,255,255,0.2);
           transform: translateX(5px);
-          background: #444;
-          box-shadow: 0 10px 20px rgba(0,0,0,0.2);
       }
-      .big-btn:hover::before { opacity: 1; }
-      .big-btn span { z-index: 1; }
-      .big-btn .arrow { font-size: 18px; color: var(--primary); transition: transform 0.3s; }
-      .big-btn:hover .arrow { transform: translateX(5px); }
 
-      .big-btn.ghost {
-          background: transparent; border: 1px solid rgba(255,255,255,0.2);
-      }
-      .big-btn.ghost:hover { background: rgba(255,255,255,0.05); }
+      .big-btn svg { width: 20px; height: 20px; opacity: 0.8; }
+      .big-btn.highlight svg { opacity: 1; }
 
-      /* Rechte Seite Content */
-      .feature-box {
-          margin-bottom: 30px;
-      }
+      /* Rechte Seite Boxen */
+      .feature-box { margin-bottom: 35px; }
+      
       .section-label {
-          font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px;
-          color: var(--primary); font-weight: 700; margin-bottom: 15px;
-          display: flex; align-items: center; gap: 10px;
+          font-size: 11px; text-transform: uppercase; letter-spacing: 2px;
+          color: #6b7280; font-weight: 700; margin-bottom: 20px;
+          display: flex; align-items: center; gap: 12px;
       }
       .section-label::after {
-          content: ""; height: 1px; flex-grow: 1; background: rgba(255,255,255,0.1);
+          content: ""; height: 1px; flex-grow: 1; background: #374151;
       }
 
       .feature-list { list-style: none; padding: 0; margin: 0; }
       .feature-item {
-          display: flex; gap: 12px; margin-bottom: 15px;
-          font-size: 13px; color: #ccc; line-height: 1.4;
+          display: flex; gap: 15px; margin-bottom: 18px;
+          font-size: 13px; color: #d1d5db; line-height: 1.5;
+          align-items: flex-start;
       }
-      .feature-icon { 
-          color: var(--warning); background: rgba(212, 167, 44, 0.1); 
-          width: 24px; height: 24px; border-radius: 6px; 
-          display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      
+      .icon-box {
+          width: 32px; height: 32px; border-radius: 8px;
+          background: rgba(255, 255, 255, 0.05);
+          display: flex; align-items: center; justify-content: center;
+          color: var(--primary);
+          flex-shrink: 0; border: 1px solid rgba(255,255,255,0.1);
       }
+      .feature-item strong { color: white; display: block; margin-bottom: 2px; }
 
       .settings-mini {
-          background: rgba(255,255,255,0.03);
-          padding: 15px; border-radius: 8px;
+          background: rgba(0,0,0,0.2);
+          padding: 16px; border-radius: 12px;
+          border: 1px solid rgba(255,255,255,0.05);
       }
       .mini-row {
           display: flex; justify-content: space-between; align-items: center;
-          margin-bottom: 10px; font-size: 12px; color: #aaa;
+          margin-bottom: 12px; font-size: 13px; color: #9ca3af;
       }
       .mini-row:last-child { margin-bottom: 0; }
 
       .feedback-area {
-          margin-top: auto; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);
-          text-align: center; font-size: 12px; color: #666;
+          margin-top: auto; padding-top: 20px; 
+          border-top: 1px solid rgba(255,255,255,0.1);
+          text-align: center; font-size: 12px; color: #6b7280;
       }
-      .feedback-area a { color: #888; text-decoration: none; border-bottom: 1px dotted #666; transition: 0.2s; }
-      .feedback-area a:hover { color: var(--primary); border-color: var(--primary); }
+      .feedback-link {
+          color: #9ca3af; text-decoration: none; font-weight: 500;
+          transition: 0.2s; border-bottom: 1px dotted #555;
+      }
+      .feedback-link:hover { color: var(--primary); border-color: var(--primary); }
 
-      /* Animation Delays für Staggering */
-      .stagger-1 { opacity: 0; animation: fadeIn 0.5s ease forwards 0.5s; }
-      .stagger-2 { opacity: 0; animation: fadeIn 0.5s ease forwards 0.7s; }
-      .stagger-3 { opacity: 0; animation: fadeIn 0.5s ease forwards 0.9s; }
-      .stagger-4 { opacity: 0; animation: fadeIn 0.5s ease forwards 1.1s; }
+      /* Animation Staggering */
+      .stagger-1 { opacity: 0; animation: fadeUp 0.6s ease forwards 0.4s; }
+      .stagger-2 { opacity: 0; animation: fadeUp 0.6s ease forwards 0.6s; }
+      .stagger-3 { opacity: 0; animation: fadeUp 0.6s ease forwards 0.8s; }
+      .stagger-4 { opacity: 0; animation: fadeUp 0.6s ease forwards 1.0s; }
 
-      @keyframes fadeIn { to { opacity: 1; } }
+      @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(15px); }
+          to { opacity: 1; transform: translateY(0); }
+      }
 
-      /* === RESTLICHE CSS (UI LAYER, MODALS, ETC) === */
-      
-      /* TOP BAR */
+      /* === REST CSS (UI & MODALS) === */
       .top-bar {
         background: var(--bg-panel); height: 50px;
         display: flex; align-items: center; padding: 0 15px;
         border-bottom: 1px solid var(--border); pointer-events: auto;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2); gap: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3); gap: 10px;
         z-index: 50; 
       }
-      .brand { font-weight: 600; color: var(--text-light); margin-right: 10px; letter-spacing: 0.5px; white-space: nowrap; }
+      .brand { font-weight: 700; color: white; margin-right: 15px; letter-spacing: 0.5px; }
       .separator { width: 1px; height: 20px; background: var(--border); margin: 0 5px; }
       .spacer { flex-grow: 1; }
 
       select, button {
         background: var(--btn-bg); color: var(--text-light); border: 1px solid var(--border);
-        padding: 6px 12px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 13px;
+        padding: 6px 12px; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 13px;
         transition: all 0.2s; outline: none; white-space: nowrap;
       }
-      select:hover, button:hover { background: var(--btn-hover); border-color: #555; }
+      select:hover, button:hover { background: #3f3f46; border-color: #555; }
       button:active { transform: translateY(1px); }
       button:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
       
       button.primary { background: var(--primary); border-color: var(--primary); color: white; }
-      button.primary:hover { background: var(--primary-hover); }
-      button.danger { color: var(--danger); border-color: var(--danger); background: transparent; }
+      button.primary:hover { background: #2563eb; }
+      button.danger { color: var(--danger); border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.1); }
       button.danger:hover { background: var(--danger); color: white; }
-      button.danger.solid { background: var(--danger); color: white; }
+      button.danger.solid { background: var(--danger); color: white; border-color: var(--danger); }
       
       button.icon-btn {
         padding: 6px; display: flex; align-items: center; justify-content: center;
-        background: transparent; border-color: #555; color: #ccc; width: 34px; height: 34px;
+        background: transparent; border-color: transparent; color: #9ca3af; width: 34px; height: 34px;
       }
-      button.icon-btn:hover { background: #333; color: white; border-color: #777; }
+      button.icon-btn:hover { background: rgba(255,255,255,0.1); color: white; }
       
       button.active { 
-        background: var(--primary); border-color: var(--text-light); color: white; 
-        box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
+        background: var(--primary); border-color: var(--primary); color: white; 
+        box-shadow: 0 2px 8px var(--primary-glow);
       }
 
-      /* SIDEBARS */
-      .sidebar {
-        position: absolute; top: 70px; left: 20px; bottom: 20px; width: 340px;
-        display: flex; flex-direction: column; gap: 10px; pointer-events: none;
-        overflow-y: auto; padding-right: 5px; z-index: 100;
-      }
-      .sidebar::-webkit-scrollbar { width: 4px; }
-      .sidebar::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
-
-      .sidebar-right {
-        position: absolute; top: 70px; right: 20px; bottom: 20px; width: 300px;
-        display: flex; flex-direction: column; gap: 10px; pointer-events: none;
-        overflow-y: auto; padding-left: 5px; z-index: 40;
-      }
-      .sidebar-right::-webkit-scrollbar { width: 4px; }
-      .sidebar-right::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+      /* Sidebars */
+      .sidebar { position: absolute; top: 70px; left: 20px; bottom: 20px; width: 340px; display: flex; flex-direction: column; gap: 10px; pointer-events: none; overflow-y: auto; padding-right: 5px; z-index: 100; }
+      .sidebar-right { position: absolute; top: 70px; right: 20px; bottom: 20px; width: 300px; display: flex; flex-direction: column; gap: 10px; pointer-events: none; overflow-y: auto; padding-left: 5px; z-index: 40; }
+      .sidebar::-webkit-scrollbar, .sidebar-right::-webkit-scrollbar { width: 4px; }
+      .sidebar::-webkit-scrollbar-thumb, .sidebar-right::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
       
-      .sidebar .panel, .sidebar-right .panel { pointer-events: auto; }
-
       .panel {
         background: var(--bg-panel); border: 1px solid var(--border);
-        border-radius: 6px; pointer-events: auto; overflow: hidden;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3); flex-shrink: 0;
+        border-radius: 8px; pointer-events: auto; overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.4); flex-shrink: 0;
       }
       .panel-header {
-        padding: 12px 15px; font-size: 12px; text-transform: uppercase; 
-        letter-spacing: 1px; color: #aaa; font-weight: 600; cursor: pointer;
+        padding: 12px 15px; font-size: 11px; text-transform: uppercase; 
+        letter-spacing: 1px; color: #9ca3af; font-weight: 700; cursor: pointer;
         display: flex; justify-content: space-between; align-items: center;
-        background: rgba(255,255,255,0.02); select-none;
+        background: rgba(255,255,255,0.03); select-none; border-bottom: 1px solid rgba(0,0,0,0.2);
       }
-      .panel-header:hover { background: rgba(255,255,255,0.05); color: white; }
+      .panel-header:hover { background: rgba(255,255,255,0.06); color: white; }
       .panel-header::after { content: '▼'; font-size: 10px; transition: transform 0.3s; }
       .panel.collapsed .panel-header::after { transform: rotate(-90deg); }
       .panel-content { padding: 15px; transition: max-height 0.3s ease-out; max-height: 600px; overflow-y: auto; overflow-x: hidden; }
-      .panel.collapsed .panel-content { max-height: 0; padding-top: 0; padding-bottom: 0; overflow: hidden; opacity: 0; }
+      .panel.collapsed .panel-content { max-height: 0; padding: 0 15px; opacity: 0; }
 
       .sidebar-action-btn {
-        background: var(--bg-panel); border: 1px solid var(--danger); color: var(--danger);
-        padding: 12px; border-radius: 6px; font-weight: 600; width: 100%; text-align: center;
-        cursor: pointer; pointer-events: auto; text-transform: uppercase; font-size: 12px;
-        transition: all 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.2); margin-top: 10px;
+        background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.3); color: var(--danger);
+        padding: 12px; border-radius: 6px; font-weight: 600; width: 100%;
+        text-transform: uppercase; font-size: 12px; margin-top: 10px; pointer-events: auto;
+        transition: 0.2s;
       }
       .sidebar-action-btn:hover { background: var(--danger); color: white; }
-
-      .sidebar-undo-btn {
-        background: var(--bg-panel); border: 1px solid #aaa; color: #aaa;
-        padding: 8px; border-radius: 6px; font-weight: 600; width: 100%; text-align: center;
-        cursor: pointer; pointer-events: auto; text-transform: uppercase; font-size: 11px;
-        transition: all 0.2s;
-      }
-      .sidebar-undo-btn:hover { background: #333; color: white; border-color: white; }
-
-      .input-group { margin-bottom: 10px; }
-      .input-group label { display: block; font-size: 12px; margin-bottom: 4px; color: #aaa; }
-      .input-group input, .input-group select, .input-group textarea { width: 100%; box-sizing: border-box; background: #333; color: white; border: 1px solid #444; padding: 6px; border-radius: 4px;}
       
-      .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-      button.preset-btn { 
-        width: 100%; text-align: left; background: #2d2d2d; border: 1px solid #3e3e42;
-        padding: 10px; font-weight: 500; white-space: normal; font-size: 11px;
+      .sidebar-undo-btn {
+        background: transparent; border: 1px solid #4b5563; color: #9ca3af;
+        padding: 8px; border-radius: 6px; font-weight: 600; width: 100%;
+        text-transform: uppercase; font-size: 11px; margin-top: 5px; pointer-events: auto;
+        transition: 0.2s;
       }
-      button.preset-btn:hover { background: #383838; border-color: #555; }
+      .sidebar-undo-btn:hover { background: #374151; color: white; border-color: #6b7280; }
 
-      .item-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-      .item-grid button { text-align: center; padding: 12px 5px; background: #2d2d2d; border: 1px solid #3e3e42; font-size: 13px;}
-      .item-grid button:hover { background: #383838; border-color: #777; }
+      /* Inputs */
+      .input-group label { display: block; font-size: 12px; margin-bottom: 6px; color: #9ca3af; font-weight: 500; }
+      .input-group input, .input-group select, .input-group textarea { 
+          width: 100%; box-sizing: border-box; background: #0f1012; 
+          color: white; border: 1px solid #374151; padding: 8px; border-radius: 6px;
+      }
+      .input-group input:focus, .input-group select:focus { border-color: var(--primary); outline: none; }
 
+      .item-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .item-grid button { text-align: center; padding: 12px 5px; background: #27272a; border: 1px solid #3f3f46; font-size: 13px; color: #e5e7eb; }
+      .item-grid button:hover { background: #3f3f46; border-color: #52525b; }
+      .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      button.preset-btn { width: 100%; text-align: left; background: #27272a; border: 1px solid #3f3f46; padding: 10px; font-weight: 500; white-space: normal; font-size: 11px; }
+      button.preset-btn:hover { background: #3f3f46; }
+
+      /* Object List */
       .object-list-item { 
-        padding: 6px; background: rgba(255,255,255,0.05); margin-bottom: 4px; border-radius: 4px; cursor: pointer; font-size: 12px; display: flex; justify-content: space-between;
+        padding: 8px; background: rgba(255,255,255,0.03); margin-bottom: 4px; border-radius: 4px; cursor: pointer; font-size: 12px; display: flex; justify-content: space-between; border: 1px solid transparent;
       }
-      .object-list-item:hover { background: rgba(255,255,255,0.1); }
-      .object-list-item.selected { border: 1px solid var(--primary); background: rgba(0, 122, 204, 0.2); }
+      .object-list-item:hover { background: rgba(255,255,255,0.06); }
+      .object-list-item.selected { border-color: var(--primary); background: rgba(59, 130, 246, 0.1); }
 
+      /* Context Menu */
       #context-menu {
-        position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);
-        background: var(--bg-panel); padding: 8px 16px; border-radius: 30px;
-        display: flex; gap: 10px; align-items: center;
-        border: 1px solid var(--primary);
-        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-        opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s;
-        transform: translateX(-50%) translateY(10px);
-        z-index: 3000;
+        position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(10px);
+        background: #1f2937; padding: 8px 12px; border-radius: 100px;
+        display: flex; gap: 8px; align-items: center;
+        border: 1px solid #374151; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);
+        opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); z-index: 3000;
       }
       #context-menu.visible { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+      #context-menu button { border-radius: 20px; padding: 6px 14px; background: #374151; border: none; font-size: 12px; }
+      #context-menu button:hover { background: #4b5563; }
+      #context-menu button.danger { background: var(--danger); color: white; }
 
-      /* === ON-SCREEN CONTROLS === */
+      /* On-Screen Controls */
       #onscreen-controls {
-        display: none; position: absolute; bottom: 20px; right: 20px; width: 180px; height: 180px;
+        display: none; position: absolute; bottom: 25px; right: 25px; width: 160px; height: 160px;
         pointer-events: none; z-index: 2000; flex-direction: column; align-items: center; justify-content: center;
       }
       #onscreen-controls.visible { display: flex; }
       .d-pad {
-        position: relative; width: 120px; height: 120px; background: rgba(30, 30, 30, 0.8);
-        border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.5); pointer-events: auto; border: 1px solid #444;
+        position: relative; width: 110px; height: 110px; background: rgba(17, 24, 39, 0.8);
+        border-radius: 50%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); pointer-events: auto; 
+        border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(5px);
       }
       .ctrl-btn {
-        position: absolute; background: transparent; border: none; color: #ccc; font-size: 20px; cursor: pointer;
-        display: flex; align-items: center; justify-content: center; transition: all 0.1s;
+        position: absolute; background: transparent; border: none; color: white; font-size: 18px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center; opacity: 0.7; transition: 0.1s;
       }
-      .ctrl-btn:active { color: #007acc; transform: scale(0.9); }
-      .btn-up    { top: 5px; left: 50%; transform: translateX(-50%); width: 40px; height: 35px; }
-      .btn-down  { bottom: 5px; left: 50%; transform: translateX(-50%); width: 40px; height: 35px; }
-      .btn-left  { left: 5px; top: 50%; transform: translateY(-50%); width: 35px; height: 40px; }
+      .ctrl-btn:hover { opacity: 1; color: var(--primary); }
+      .ctrl-btn:active { transform: scale(0.9); }
+      .btn-up { top: 5px; left: 50%; transform: translateX(-50%); width: 40px; height: 35px; }
+      .btn-down { bottom: 5px; left: 50%; transform: translateX(-50%); width: 40px; height: 35px; }
+      .btn-left { left: 5px; top: 50%; transform: translateY(-50%); width: 35px; height: 40px; }
       .btn-right { right: 5px; top: 50%; transform: translateY(-50%); width: 35px; height: 40px; }
-      .btn-center { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: #333; border-radius: 50%; border: 1px solid #555; }
-      .extra-controls { pointer-events: auto; display: flex; gap: 10px; margin-top: 10px; }
-      .pill-group { display: flex; background: rgba(30, 30, 30, 0.8); border-radius: 20px; border: 1px solid #444; overflow: hidden; }
-      .pill-btn { background: transparent; border: none; color: white; padding: 8px 12px; cursor: pointer; font-size: 14px; border-right: 1px solid #444; }
+      .btn-center { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); }
+      .extra-controls { pointer-events: auto; display: flex; margin-top: 15px; }
+      .pill-group { display: flex; background: rgba(17, 24, 39, 0.8); border-radius: 100px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; }
+      .pill-btn { background: transparent; border: none; color: white; padding: 8px 16px; cursor: pointer; font-size: 16px; border-right: 1px solid rgba(255,255,255,0.1); }
       .pill-btn:last-child { border-right: none; }
-      .pill-btn:hover { background: #444; }
-      .pill-btn:active { background:var(--primary); }
+      .pill-btn:hover { background: rgba(255,255,255,0.1); }
 
-      #notification {
-        position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
-        background: var(--danger); color: white; padding: 10px 20px; border-radius: 4px;
-        font-weight: 500; opacity: 0; pointer-events: none; transition: opacity 0.3s;
-        z-index: 2000; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-      }
-      #notification.visible { opacity: 1; }
-
+      /* Modals */
       #modal-overlay, #settings-overlay {
-        position: absolute; inset: 0; background: rgba(0,0,0,0.7); z-index: 3000;
+        position: absolute; inset: 0; background: rgba(0,0,0,0.75); z-index: 3000;
         display: none; align-items: center; justify-content: center; pointer-events: auto;
+        backdrop-filter: blur(5px);
       }
-      #modal-overlay.active, #settings-overlay.active { display: flex; }
+      #modal-overlay.active, #settings-overlay.active { display: flex; animation: fadeIn 0.3s ease; }
       .modal-box {
-        background: var(--bg-panel); width: 500px; padding: 25px; border-radius: 8px;
-        border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        background: #1f2937; width: 480px; padding: 30px; border-radius: 16px;
+        border: 1px solid #374151; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         max-height: 80vh; overflow-y: auto;
       }
-      .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 15px; color: white; border-bottom: 1px solid #444; padding-bottom: 10px; display:flex; justify-content:space-between; }
-      .modal-content { color: #ccc; line-height: 1.6; margin-bottom: 20px; }
-
-      .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-      .setting-row label { color: white; font-size: 14px; }
-      .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+      .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; color: white; display: flex; justify-content: space-between; align-items: center; }
+      .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #374151; padding-bottom: 12px; }
+      .setting-row label { color: #e5e7eb; font-weight: 500; }
+      
+      /* Switch */
+      .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
       .switch input { opacity: 0; width: 0; height: 0; }
-      .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; transition: .4s; border-radius: 20px; }
-      .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+      .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #4b5563; transition: .3s; border-radius: 24px; }
+      .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
       input:checked + .slider { background-color: var(--primary); }
       input:checked + .slider:before { transform: translateX(20px); }
 
-      .report-item { background: rgba(255,255,255,0.05); padding: 12px; margin-bottom: 8px; border-radius: 4px; border-left: 4px solid #555; }
-      .report-item.good { border-left-color: var(--success); }
-      .report-item.warn { border-left-color: var(--warning); }
-      .report-item.bad { border-left-color: var(--danger); }
-      .report-val { font-weight: bold; color: white; float: right; }
+      /* Reports */
+      .report-item { background: rgba(255,255,255,0.03); padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid #4b5563; }
+      .report-item.good { border-left-color: var(--success); background: rgba(16, 185, 129, 0.05); }
+      .report-item.warn { border-left-color: var(--warning); background: rgba(245, 158, 11, 0.05); }
+      .report-item.bad { border-left-color: var(--danger); background: rgba(239, 68, 68, 0.05); }
 
-      #loader {
-        position: absolute; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        transition: opacity 0.3s; opacity: 0; pointer-events: none;
+      /* Loader - KORRIGIERT: Standardmäßig unsichtbar */
+      #loader { 
+        position: absolute; inset: 0; background: #0f1012; z-index: 9999; 
+        display: flex; flex-direction: column; align-items: center; justify-content: center; 
+        transition: opacity 0.5s; 
+        opacity: 0; pointer-events: none; /* WICHTIG: Klicks durchlassen wenn inaktiv */
       }
-      #loader.active { opacity: 1; pointer-events: auto; }
-      .spinner {
-        width: 30px; height: 30px; border: 3px solid #333; border-top: 3px solid var(--primary);
-        border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 15px;
+      #loader.active { 
+        opacity: 1; pointer-events: auto; /* Sperrt Klicks nur wenn aktiv */
       }
-      @keyframes spin { 100% { transform: rotate(360deg); } }
-
-      /* BODY high contrast overrides */
-      body.high-contrast .home-container { background: black; border: 2px solid white; }
-      body.high-contrast .big-btn { background: black; border: 2px solid white; color: white; }
-      body.high-contrast .big-btn:hover { background: #333; }
-      body.high-contrast .home-title-large { background: none; color: white; -webkit-text-fill-color: white; }
-
-      /* Tutorial Highlight */
-      .tutorial-highlight { 
-          position: relative; z-index: 9001; 
-          box-shadow: 0 0 0 4px var(--primary) !important; 
-          border-color: var(--primary) !important;
+      .spinner { 
+        width: 40px; height: 40px; border: 3px solid #374151; 
+        border-top: 3px solid var(--primary); border-radius: 50%; 
+        animation: spin 0.8s linear infinite; margin-bottom: 20px; 
       }
 
+      /* Notification */
+      #notification {
+        position: absolute; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px);
+        background: #1f2937; color: white; padding: 12px 24px; border-radius: 8px;
+        font-weight: 500; opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 2000; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #374151; display: flex; align-items: center; gap: 10px;
+      }
+      #notification.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+      #notification::before { content: "ℹ"; display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: var(--primary); color: white; border-radius: 50%; font-size: 11px; font-weight: bold; }
+
+      /* Filters */
+      body.sim-blur canvas { filter: blur(4px) contrast(1.2); }
+      body.sim-severe canvas { filter: blur(8px) contrast(0.8) brightness(0.7); }
+      body.sim-blind canvas { filter: brightness(0); background: black; }
+      #vision-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 9000; background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.95) 40%, black 70%); display: none; }
+      body.sim-tunnel #vision-overlay { display: block; }
+      .vision-hint { font-size: 11px; color: var(--warning); margin-bottom: 8px; font-style: italic; background: rgba(245, 158, 11, 0.1); padding: 8px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.2); }
+      
+      .tutorial-highlight { position: relative; z-index: 9001; box-shadow: 0 0 0 4px var(--primary), 0 0 20px var(--primary-glow) !important; border-color: var(--primary) !important; }
+
+      /* === HOCHKONTRAST MODUS FIX === */
+      body.high-contrast {
+        --bg-dark: #000000;
+        --bg-panel: #000000;
+        --border: #ffffff;
+        --primary: #ffff00; /* Gelb für maximalen Kontrast */
+        --text: #ffffff;
+        --text-light: #ffffff;
+        --btn-bg: #000000;
+      }
+
+      body.high-contrast .panel,
+      body.high-contrast .top-bar,
+      body.high-contrast .sidebar-action-btn, 
+      body.high-contrast .sidebar-undo-btn,
+      body.high-contrast .modal-box,
+      body.high-contrast .home-container,
+      body.high-contrast select,
+      body.high-contrast input,
+      body.high-contrast textarea {
+        background: #000000 !important;
+        border: 2px solid #ffffff !important;
+        color: #ffffff !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+      }
+
+      body.high-contrast button {
+        border: 2px solid #ffffff !important;
+        background: #000000 !important;
+        color: #ffffff !important;
+        font-weight: bold;
+      }
+
+      body.high-contrast button.primary,
+      body.high-contrast .big-btn.highlight {
+        background: #ffff00 !important;
+        color: #000000 !important;
+        border-color: #ffff00 !important;
+      }
+
+      body.high-contrast button:hover,
+      body.high-contrast select:hover {
+        background: #333 !important;
+        text-decoration: underline;
+      }
+      
+      body.high-contrast label,
+      body.high-contrast h1, body.high-contrast h2, 
+      body.high-contrast h3, body.high-contrast h4 {
+        color: #ffffff !important;
+      }
+
+      body.high-contrast .home-title-large {
+        background: none;
+        -webkit-text-fill-color: #ffff00;
+        color: #ffff00;
+      }
+
+      /* Canvas Kontrast verstärken */
+      body.high-contrast canvas {
+        filter: contrast(1.5) grayscale(1);
+      }
+      
     </style>
   </head>
   <body>
     <!-- Lade-Animation -->
-    <div id="loader"><div class="spinner"></div><div id="loading-text" style="color:#ddd;">Lade...</div></div>
+    <div id="loader"><div class="spinner"></div><div id="loading-text" style="color:#9ca3af; font-size:12px; letter-spacing:1px; text-transform:uppercase;">System wird geladen</div></div>
     <div id="notification"></div>
     <input type="file" id="file-input" style="display:none" accept=".json" onchange="app.loadFromFile(this)">
     
@@ -439,13 +530,13 @@
 
     <!-- Settings Modal -->
     <div id="settings-overlay">
-      <div class="modal-box" style="width: 500px;">
+      <div class="modal-box">
         <div class="modal-title">
           <span>Einstellungen</span>
-          <button style="background:none; border:none; color:white; font-size:1.2em; cursor:pointer;" onclick="app.toggleSettings()">✕</button>
+          <button style="background:none; border:none; color:white; font-size:1.5em; cursor:pointer; padding:0;" onclick="app.toggleSettings()">×</button>
         </div>
         <div class="setting-row">
-          <label>Erweiterte Steuerung (On-Screen)</label>
+          <label>On-Screen Steuerung</label>
           <label class="switch"><input type="checkbox" id="set-controls" onchange="app.updateSettings()" checked><span class="slider"></span></label>
         </div>
         <div class="setting-row">
@@ -462,50 +553,54 @@
         </div>
         <div class="setting-row">
             <label>Schriftgröße</label>
-            <div>
-              <button onclick="app.setFontScale(-0.1)" style="padding:2px 8px;">A-</button>
-              <span id="font-scale-val" style="margin:0 10px;">100%</span>
-              <button onclick="app.setFontScale(0.1)" style="padding:2px 8px;">A+</button>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <button onclick="app.setFontScale(-0.1)" style="padding:4px 8px; border:1px solid #4b5563;">A-</button>
+              <span id="font-scale-val" style="font-size:12px; color:#fff; width:40px; text-align:center;">100%</span>
+              <button onclick="app.setFontScale(0.1)" style="padding:4px 8px; border:1px solid #4b5563;">A+</button>
             </div>
         </div>
-        <div class="setting-row">
+        <div class="setting-row" style="border-bottom:none;">
           <label>Farbfilter</label>
-          <select id="set-color-filter" onchange="app.updateSettings()" style="width:auto;">
+          <select id="set-color-filter" onchange="app.updateSettings()" style="width:auto; min-width:120px;">
             <option value="none">Keiner</option>
             <option value="grayscale">Graustufen</option>
             <option value="sepia">Sepia</option>
             <option value="invert">Invertiert</option>
           </select>
         </div>
-        <button class="primary" style="width:100%; margin-top:10px;" onclick="app.toggleSettings()">Schließen</button>
+        <button class="primary" style="width:100%; margin-top:10px; padding:12px;" onclick="app.toggleSettings()">Einstellungen schließen</button>
       </div>
     </div>
 
     <!-- === PROFESSIONELLER HOMESCREEN (REDESIGN 16:9) === -->
     <div id="homescreen">
-      <!-- Hintergrund Animation Canvas -->
+      <!-- Hintergrund Animation & Raster -->
       <canvas id="bg-canvas"></canvas>
+      <div class="tech-grid-overlay"></div>
 
       <div class="home-container">
         <!-- Linke Seite: Branding & Aktionen -->
         <div class="home-left stagger-1">
-            <div style="margin-bottom: 40px;">
+            <div style="margin-bottom: 50px;">
                 <div class="home-title-large">ELMeKS.digital</div>
-                <div class="home-subtitle">Virtuelle Raumplanung & <br>Barrierefreiheits-Check für Bildungseinrichtungen.</div>
+                <div class="home-subtitle">Die professionelle Lösung für inklusive Raumplanung <br>und Barrierefreiheits-Analyse in Bildungseinrichtungen.</div>
             </div>
             
             <div class="action-buttons stagger-2">
-                <button class="big-btn" onclick="app.startSession()">
+                <button class="big-btn highlight" onclick="app.startSession()">
                     <span>Neuen Raum planen</span>
-                    <span class="arrow">→</span>
+                    <!-- SVG Arrow Right -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                 </button>
                 <button class="big-btn ghost" onclick="document.getElementById('file-input').click()">
-                    <span>Vorhandenen Plan laden</span>
-                    <span style="font-size:12px;">📂</span>
+                    <span>Plan laden</span>
+                    <!-- SVG Folder -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                 </button>
                 <button class="big-btn ghost" onclick="app.startTutorial()">
                     <span>Tutorial starten</span>
-                    <span style="font-size:12px;">🎓</span>
+                    <!-- SVG Academic Cap -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
                 </button>
             </div>
         </div>
@@ -515,20 +610,20 @@
             
             <!-- Ausblick -->
             <div class="feature-box">
-                <div class="section-label">Kommende Funktionen</div>
+                <div class="section-label">Features & Roadmap</div>
                 <ul class="feature-list">
                     <li class="feature-item">
-                        <div class="feature-icon">☀</div>
+                        <div class="icon-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></div>
                         <div>
-                            <strong>Licht & Blendung:</strong> <br>
-                            Automatische Warnung bei Blendgefahr durch Fenster (< 30° Blickwinkel).
+                            <strong>Lichtsimulation</strong>
+                            Blendgefahr-Erkennung (< 30° Blickwinkel).
                         </div>
                     </li>
                     <li class="feature-item">
-                        <div class="feature-icon">📏</div>
+                        <div class="icon-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></div>
                         <div>
-                            <strong>Laufwege-Check:</strong> <br>
-                            Live-Überprüfung von Engstellen (< 90cm) entlang definierter Fluchtwege.
+                            <strong>Seh-Simulation</strong>
+                            Filter für Visus-Verlust & Gesichtsfeld.
                         </div>
                     </li>
                 </ul>
@@ -544,7 +639,7 @@
                     </div>
                     <div class="mini-row">
                         <span>Farbfilter</span>
-                        <select id="start-color-filter" onchange="app.updateSettings()" style="background:#444; border:none; color:white; padding:2px; border-radius:4px;">
+                        <select id="start-color-filter" onchange="app.updateSettings()" style="background:#0f1012; border:1px solid #374151; color:white; padding:4px; border-radius:4px; font-size:12px;">
                             <option value="none">Keiner</option>
                             <option value="grayscale">Graustufen</option>
                             <option value="sepia">Sepia</option>
@@ -557,7 +652,7 @@
             <!-- Feedback Footer -->
             <div class="feedback-area">
                 Haben Sie Ideen oder Wünsche? <br>
-                <a href="mailto:thepytales@gmail.com">Schreiben Sie uns!</a>
+                <a href="mailto:thepytales@gmail.com" class="feedback-link">Schreiben Sie uns!</a>
             </div>
 
         </div>
@@ -568,9 +663,9 @@
     <div id="ui-layer" style="display:none;">
       <!-- Top Navigation -->
       <div class="top-bar">
-        <!-- Home Icon Button -->
+        <!-- SVG Home Icon -->
         <button onclick="app.confirmGoHome()" title="Hauptmenü" class="icon-btn" style="margin-right:15px;">
-           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         </button>
 
         <div class="brand">ELMeKS.digital</div>
@@ -587,16 +682,18 @@
         <button onclick="app.exportPDF()">PDF Export</button>
         
         <div class="separator"></div>
-        <span style="font-size:0.9em; color:#888;">KAMERA:</span>
-        <button onclick="app.setCamera('top')">Kamera zurücksetzen</button>
+        <span style="font-size:0.9em; color:#6b7280; font-weight:600; letter-spacing:0.5px;">ANSICHT:</span>
+        <button onclick="app.setCamera('top')">Zurücksetzen</button>
 
         <div class="spacer"></div>
 
-        <button onclick="app.toggleSettings()" style="margin-left: 10px; padding: 6px 10px;">⚙️</button>
+        <button onclick="app.toggleSettings()" style="margin-left: 10px; padding: 6px 10px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
 
-        <div class="stats" style="margin-left:15px;">
-          <span>Plätze:</span>
-          <span class="badge" id="seat-count">0</span>
+        <div class="stats" style="margin-left:15px; display:flex; align-items:center; gap:8px;">
+          <span style="font-size:11px; color:#6b7280; text-transform:uppercase; font-weight:700;">Plätze</span>
+          <span class="badge" id="seat-count" style="background:#374151; color:white; padding:2px 8px; border-radius:4px; font-weight:700;">0</span>
         </div>
       </div>
 
@@ -619,7 +716,7 @@
               <label>Anzahl</label>
               <input type="number" id="wizard-count" value="20" min="1" max="60">
             </div>
-            <button class="primary full-width" style="width:100%" onclick="app.runWizard()">Generieren</button>
+            <button class="primary full-width" style="width:100%; margin-top:5px;" onclick="app.runWizard()">Generieren</button>
           </div>
         </div>
 
@@ -627,7 +724,7 @@
         <div class="panel collapsed">
           <div class="panel-header" onclick="togglePanel(this)">Einzelmöbel & Ausstattung</div>
           <div class="panel-content">
-            <label style="color:#aaa; font-size:11px; display:block; margin-bottom:5px;">SITZGELEGENHEITEN & TISCHE</label>
+            <label style="color:#6b7280; font-size:10px; font-weight:700; display:block; margin-bottom:8px; letter-spacing:0.5px;">SITZGELEGENHEITEN & TISCHE</label>
             <div class="item-grid">
               <button onclick="app.addFurniture('row_combo')">Tisch+Stuhl</button>
               <button onclick="app.addFurniture('chair')">Stuhl</button>
@@ -638,7 +735,7 @@
               <button onclick="app.addFurniture('sofa')">Sofa</button>
             </div>
 
-            <label style="color:#aaa; font-size:11px; display:block; margin-bottom:5px; margin-top:10px;">MÖBEL & TECHNIK</label>
+            <label style="color:#6b7280; font-size:10px; font-weight:700; display:block; margin-bottom:8px; margin-top:15px; letter-spacing:0.5px;">MÖBEL & TECHNIK</label>
             <div class="item-grid">
               <button onclick="app.addFurniture('board')">Tafel</button>
               <button onclick="app.addFurniture('teacher')">Pult</button>
@@ -648,7 +745,7 @@
               <button onclick="app.addFurniture('laptop')">Laptop</button>
             </div>
             
-            <label style="color:#aaa; font-size:11px; display:block; margin-bottom:5px; margin-top:10px;">AKUSTIK & BARRIEREFREIHEIT</label>
+            <label style="color:#6b7280; font-size:10px; font-weight:700; display:block; margin-bottom:8px; margin-top:15px; letter-spacing:0.5px;">AKUSTIK & BARRIEREFREIHEIT</label>
             <div class="item-grid">
               <button onclick="app.addFurniture('carpet_proc')">Teppich</button>
               <button onclick="app.addFurniture('partition_proc')">Trennwand</button>
@@ -678,21 +775,21 @@
         <div class="panel collapsed">
           <div class="panel-header" onclick="togglePanel(this)">Objektliste</div>
           <div class="panel-content">
-            <div id="selection-details" style="display:none; border-bottom:1px solid #444; margin-bottom:10px; padding-bottom:10px;">
-                <label style="color:var(--primary); font-weight:bold;">Auswahl</label>
+            <div id="selection-details" style="display:none; border-bottom:1px solid #374151; margin-bottom:10px; padding-bottom:10px;">
+                <label style="color:var(--primary); font-weight:bold; font-size:12px; margin-bottom:5px; display:block;">Auswahl bearbeiten</label>
                 <div class="input-group" style="margin-top:5px;">
                     <label>Anmerkung</label>
-                    <textarea id="obj-annotation" rows="2" oninput="app.updateAnnotation(this.value)"></textarea>
+                    <textarea id="obj-annotation" rows="2" oninput="app.updateAnnotation(this.value)" style="resize:vertical;"></textarea>
                 </div>
             </div>
             <div id="object-list-container">
-               <small style="color:#888;">Leer.</small>
+               <small style="color:#6b7280;">Keine Objekte platziert.</small>
             </div>
           </div>
         </div>
 
         <button class="sidebar-action-btn" onclick="app.clearRoom()">Raum leeren</button>
-        <button class="sidebar-undo-btn" onclick="app.undo()" style="margin-top:5px;">⟲ Rückgängig</button>
+        <button class="sidebar-undo-btn" onclick="app.undo()">⟲ Schritt zurück</button>
       </div>
 
       <!-- Right Sidebar -->
@@ -708,8 +805,8 @@
             </div>
             
             <!-- 2. Steuerungs-Optionen -->
-            <div id="avatar-controls-group" style="display:none; margin-top:10px; border-top:1px solid #444; padding-top:10px;">
-                <label style="color:#aaa; font-size:11px; margin-bottom:5px; display:block;">SIMULATIONS-MODUS</label>
+            <div id="avatar-controls-group" style="display:none; margin-top:15px; border-top:1px solid #374151; padding-top:15px;">
+                <label style="color:#6b7280; font-size:10px; font-weight:700; margin-bottom:8px; display:block; letter-spacing:0.5px;">SIMULATIONS-MODUS</label>
                 
                 <div class="item-grid">
                     <button id="btn-toggle-view">Ich-Perspektive</button>
@@ -722,15 +819,15 @@
                 </button>
 
                 <!-- Settings für Sehschwäche -->
-                <div id="vision-settings-panel" style="display:none; margin-top:15px; background:rgba(0,0,0,0.2); padding:10px; border-radius:4px;">
-                    <label style="color:var(--primary); font-size:11px; text-transform:uppercase; display:block; margin-bottom:5px;">Visus / Grad</label>
+                <div id="vision-settings-panel" style="display:none; margin-top:15px; background:rgba(0,0,0,0.2); padding:12px; border-radius:6px; border:1px solid #374151;">
+                    <label style="color:var(--primary); font-size:11px; text-transform:uppercase; font-weight:700; display:block; margin-bottom:6px;">Visus / Grad</label>
                     <select id="vision-select-right" style="width:100%" onchange="app.setVisionSeverity(this.value)">
                         <option value="normal" selected>Keine (Normal)</option>
                         <option value="low">Sehbehindert (Visus &lt; 0.3)</option>
                         <option value="severe">Hochgradig (Visus &lt; 0.05)</option>
                         <option value="blind">Blindheit (Visus &lt; 0.02)</option>
                     </select>
-                    <div id="vision-desc" style="font-size:11px; color:#888; margin-top:5px; font-style:italic; line-height:1.3;">
+                    <div id="vision-desc" style="font-size:11px; color:#9ca3af; margin-top:8px; font-style:italic; line-height:1.4;">
                         Normale Sicht.
                     </div>
                 </div>
@@ -749,7 +846,7 @@
           <div class="panel-content">
             <div class="input-group">
                 <label>Analyse-Tools</label>
-                <button onclick="app.checkAccessibility()" style="width:100%; margin-bottom:5px;">Jetzt prüfen</button>
+                <button onclick="app.checkAccessibility()" style="width:100%; margin-bottom:5px;">Barrierefreiheit prüfen</button>
             </div>
           </div>
         </div>
@@ -759,8 +856,8 @@
       <div id="context-menu">
         <button onclick="app.rotateSelection(1)">Drehen L</button>
         <button onclick="app.rotateSelection(-1)">Drehen R</button>
-        <div class="separator"></div>
-        <button class="danger" onclick="app.deleteSelection()">Entfernen</button>
+        <div style="width:1px; height:15px; background:#4b5563;"></div>
+        <button class="danger" onclick="app.deleteSelection()">Löschen</button>
       </div>
 
       <!-- On-Screen Controls -->
@@ -768,14 +865,14 @@
           <div class="d-pad">
               <button class="ctrl-btn btn-up" onclick="app.moveCamera(0, 1)">▲</button>
               <button class="ctrl-btn btn-left" onclick="app.moveCamera(1, 0)">◀</button>
-              <button class="ctrl-btn btn-center" onclick="app.setCamera('top')">↺</button>
+              <button class="ctrl-btn btn-center" onclick="app.setCamera('top')">●</button>
               <button class="ctrl-btn btn-right" onclick="app.moveCamera(-1, 0)">▶</button>
               <button class="ctrl-btn btn-down" onclick="app.moveCamera(0, -1)">▼</button>
           </div>
           <div class="extra-controls">
               <div class="pill-group">
                   <button class="pill-btn" onclick="app.zoomCamera(-1)">+</button>
-                  <button class="pill-btn" onclick="app.zoomCamera(1)">-</button>
+                  <button class="pill-btn" onclick="app.zoomCamera(1)">−</button>
               </div>
           </div>
       </div>
@@ -794,15 +891,13 @@
           let width, height;
           let particles = [];
           
-          // Maus Position
           const mouse = { x: null, y: null };
           
-          // Konfiguration
-          const particleCount = 60;
-          const connectionDist = 120;
-          const mouseDist = 150;
+          // Konfiguration: Mehr Partikel, stärkere Verbindung
+          const particleCount = 55; // Etwas mehr Partikel
+          const connectionDist = 150;
+          const mouseDist = 200;
           
-          // Resize Handler
           function resize() {
               width = window.innerWidth;
               height = window.innerHeight;
@@ -812,7 +907,6 @@
           window.addEventListener('resize', resize);
           resize();
           
-          // Maus Events
           window.addEventListener('mousemove', (e) => {
               mouse.x = e.x;
               mouse.y = e.y;
@@ -823,21 +917,19 @@
               mouse.y = null;
           });
 
-          // Partikel Klasse
           class Particle {
               constructor() {
                   this.x = Math.random() * width;
                   this.y = Math.random() * height;
-                  this.vx = (Math.random() - 0.5) * 0.5;
-                  this.vy = (Math.random() - 0.5) * 0.5;
-                  this.size = Math.random() * 2 + 1;
+                  this.vx = (Math.random() - 0.5) * 0.4;
+                  this.vy = (Math.random() - 0.5) * 0.4;
+                  this.size = Math.random() * 2.0 + 1.0; // Größere Partikel
               }
               
               update() {
                   this.x += this.vx;
                   this.y += this.vy;
                   
-                  // Wrap around screen
                   if (this.x < 0) this.x = width;
                   if (this.x > width) this.x = 0;
                   if (this.y < 0) this.y = height;
@@ -845,19 +937,18 @@
               }
               
               draw() {
-                  ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                  // FIX 3: Partikel viel heller (0.5 statt 0.2)
+                  ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
                   ctx.beginPath();
                   ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
                   ctx.fill();
               }
           }
           
-          // Init Particles
           for (let i = 0; i < particleCount; i++) {
               particles.push(new Particle());
           }
           
-          // Animation Loop
           function animate() {
               ctx.clearRect(0, 0, width, height);
               
@@ -865,14 +956,14 @@
                   particles[i].update();
                   particles[i].draw();
                   
-                  // Verbindungen zu anderen Partikeln
                   for (let j = i; j < particles.length; j++) {
                       const dx = particles[i].x - particles[j].x;
                       const dy = particles[i].y - particles[j].y;
                       const distance = Math.sqrt(dx * dx + dy * dy);
                       
                       if (distance < connectionDist) {
-                          ctx.strokeStyle = `rgba(255, 255, 255, ${0.1 - distance/connectionDist * 0.1})`;
+                          // FIX 3: Verbindungslinien heller (Faktor 0.15 statt 0.05)
+                          ctx.strokeStyle = `rgba(255, 255, 255, ${0.15 - distance/connectionDist * 0.15})`;
                           ctx.lineWidth = 1;
                           ctx.beginPath();
                           ctx.moveTo(particles[i].x, particles[i].y);
@@ -881,15 +972,15 @@
                       }
                   }
                   
-                  // Verbindung zur Maus
                   if (mouse.x != null) {
                       const dx = particles[i].x - mouse.x;
                       const dy = particles[i].y - mouse.y;
                       const distance = Math.sqrt(dx * dx + dy * dy);
                       
                       if (distance < mouseDist) {
-                          ctx.strokeStyle = `rgba(0, 122, 204, ${0.4 - distance/mouseDist * 0.4})`; // Cyan Farbe
-                          ctx.lineWidth = 1;
+                          // FIX 3: Maus-Verbindung sehr stark (Cyan/Blau Glow)
+                          ctx.strokeStyle = `rgba(59, 130, 246, ${0.6 - distance/mouseDist * 0.6})`;
+                          ctx.lineWidth = 1.5;
                           ctx.beginPath();
                           ctx.moveTo(particles[i].x, particles[i].y);
                           ctx.lineTo(mouse.x, mouse.y);
