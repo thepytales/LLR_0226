@@ -1037,45 +1037,164 @@ window.app.loadFromFile = function(input) {
     reader.readAsText(file); input.value = '';
 };
 
+// === HIGH-END PDF EXPORT (FINAL DESIGN - Ohne Abfrage) ===
 window.app.exportPDF = async function() {
+    // 1. Vorbereitung & Kamera-Setup
     app.setCamera('top');
-    toggleLoader(true, "Generiere PDF...");
+    toggleLoader(true, "Generiere Report...");
     await new Promise(r => setTimeout(r, 800));
     
+    // 2. Initialisierung
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
-    doc.setFillColor(0, 48, 93); doc.rect(0, 0, 210, 25, 'F');
-    doc.setTextColor(255, 255, 255); doc.setFontSize(20); doc.setFont('helvetica', 'bold');
-    doc.text("Digitaler Raumplan", 15, 17);
+    // --- Corporate Design Farben (TU Dresden orientiert) ---
+    const cBlueDark  = [0, 48, 93];    // TU Dunkelblau (HKS 41)
+    const cBlueLight = [0, 158, 224];  // TU Hellblau (Akzent)
+    const cGrayText  = [80, 80, 80];   // Fließtext Grau
+    const cGrayLight = [240, 240, 240];// Hintergründe
+    const cWhite     = [255, 255, 255];
     
-    doc.setTextColor(50, 50, 50); doc.setFontSize(10); doc.setFont('helvetica', 'normal');
-    const roomName = ASSETS.rooms[currentRoomFile]?.name || "Unbekannter Raum";
-    const dateStr = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    doc.text(`Erstellt am: ${dateStr}`, 15, 35);
-    doc.text(`Raum: ${roomName}`, 15, 41);
+    // Status Farben
+    const cSuccess = [0, 125, 64];   // Grün
+    const cWarn    = [230, 150, 0];  // Orange
+    const cDanger  = [200, 30, 30];  // Rot
 
+    // Hilfsfunktion: Zeichnet eine Sektions-Überschrift
+    const drawSectionHeader = (text, y) => {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(...cBlueDark);
+        doc.text(text.toUpperCase(), 20, y);
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.3);
+        doc.line(20, y + 2, 190, y + 2);
+        return y + 10;
+    };
+
+    // === 1. HEADER ===
+    doc.setFillColor(...cBlueDark);
+    doc.rect(0, 0, 210, 12, 'F'); 
+    
+    doc.setTextColor(...cWhite);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("RAUMPLANUNGS-REPORT", 20, 8.5);
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("ELMeKS.digital | TU Dresden", 190, 8.5, { align: "right" });
+
+    // === 2. METADATEN ===
+    const dateStr = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const roomName = ASSETS.rooms[currentRoomFile]?.name || "Unbekannter Raum";
+    const seatCount = document.getElementById("seat-count").innerText;
+
+    doc.setFontSize(9);
+    doc.setTextColor(...cGrayText);
+    
+    // Grid für Metadaten
+    let metaY = 22;
+    doc.text("DATUM", 20, metaY);
+    doc.text("RAUM-MODELL", 80, metaY);
+    doc.text("KAPAZITÄT", 160, metaY);
+
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 0, 0);
+    doc.text(dateStr, 20, metaY + 5);
+    doc.text(roomName, 80, metaY + 5);
+    doc.text(seatCount + " Sitzplätze", 160, metaY + 5);
+
+    let currentY = 38;
+
+    // === 3. SCREENSHOT ===
     renderer.render(scene, camera);
     const imgData = renderer.domElement.toDataURL("image/jpeg", 0.95);
     const imgProps = doc.getImageProperties(imgData);
-    const pdfWidth = 180;
+    const pdfWidth = 170;
     const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-    doc.addImage(imgData, 'JPEG', 15, 48, pdfWidth, pdfHeight); 
-    
-    let currentY = 48 + pdfHeight + 10;
+
+    // Feiner Rahmen um das Bild
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.2);
+    doc.rect(19.5, currentY - 0.5, pdfWidth + 1, pdfHeight + 1); 
+    doc.addImage(imgData, 'JPEG', 20, currentY, pdfWidth, pdfHeight);
+
+    currentY += pdfHeight + 15;
+
+    // === 4. ANALYSE DASHBOARD ===
+    currentY = drawSectionHeader("Analyse & Barrierefreiheit", currentY);
+
     const stats = getAccessibilityStats();
-    let statusText = "Vollständig barrierefrei";
-    if (stats.count < 2) statusText = "Raum ist weitestgehend leer."; 
-    else if (stats.minCm < 70) statusText = "Nicht barrierefrei (Engstellen < 70cm)"; 
-    else if (stats.minCm < 90) statusText = "Eingeschränkt barrierefrei (70-90cm)";
-
-    doc.setFontSize(11); doc.setTextColor(0);
-    doc.text(`Status: ${statusText}`, 20, currentY + 6);
-    currentY += 15;
-
-    doc.setFontSize(14); doc.setFont('helvetica', 'bold'); 
-    doc.text("Inventarliste", 15, currentY);
     
+    // Logik für Status
+    let accStatus = "KRITISCH";
+    let accColor = cDanger;
+    if (stats.minCm >= 70) { accStatus = "EINGESCHRÄNKT"; accColor = cWarn; }
+    if (stats.minCm >= 90) { accStatus = "DIN KONFORM"; accColor = cSuccess; }
+    if (stats.count < 2)   { accStatus = "LEER"; accColor = cGrayText; }
+
+    let soundStatus = "HALLIG (SCHLECHT)";
+    let soundColor = cDanger;
+    if(stats.acousticScore > stats.targets.warn) { soundStatus = "AKZEPTABEL"; soundColor = cWarn; }
+    if(stats.acousticScore > stats.targets.good) { soundStatus = "GUT (GEDÄMPFT)"; soundColor = cSuccess; }
+
+    // Box Parameter
+    const boxW = 82;
+    const boxH = 28;
+    
+    // --- LINKE BOX: ROLLSTUHL ---
+    doc.setDrawColor(220, 220, 220);
+    doc.setFillColor(252, 252, 252);
+    doc.roundedRect(20, currentY, boxW, boxH, 2, 2, 'FD'); 
+    
+    doc.setFillColor(...accColor);
+    doc.rect(20, currentY, 3, boxH, 'F'); 
+
+    doc.setFontSize(8); doc.setTextColor(...cGrayText); doc.setFont("helvetica", "bold");
+    doc.text("DURCHGANGSBREITE", 26, currentY + 6);
+    
+    doc.setFontSize(12); doc.setTextColor(...accColor);
+    doc.text(accStatus, 26, currentY + 12);
+
+    doc.setFontSize(10); doc.setTextColor(0,0,0); doc.setFont("helvetica", "normal");
+    doc.text(`Gemessen: ${stats.minCm} cm`, 26, currentY + 18);
+    
+    let hintText = stats.minCm < 90 ? "Empfohlen: > 90cm" : "Anforderung erfüllt";
+    doc.setFontSize(8); doc.setTextColor(...cGrayText);
+    doc.text(hintText, 26, currentY + 24);
+
+    // --- RECHTE BOX: AKUSTIK ---
+    doc.setDrawColor(220, 220, 220);
+    doc.setFillColor(252, 252, 252);
+    doc.roundedRect(108, currentY, boxW, boxH, 2, 2, 'FD');
+
+    doc.setFillColor(...soundColor);
+    doc.rect(108, currentY, 3, boxH, 'F');
+
+    doc.setFontSize(8); doc.setTextColor(...cGrayText); doc.setFont("helvetica", "bold");
+    doc.text("AKUSTIK-PROGNOSE", 114, currentY + 6);
+    
+    doc.setFontSize(12); doc.setTextColor(...soundColor);
+    doc.text(soundStatus, 114, currentY + 12);
+
+    doc.setFontSize(10); doc.setTextColor(0,0,0); doc.setFont("helvetica", "normal");
+    let acousticDetail = "Basierend auf Möblierung";
+    if(stats.wallIssues > 0) acousticDetail += ` + ${stats.wallIssues} Wandkonflikte`;
+    doc.text(acousticDetail, 114, currentY + 18);
+
+    doc.setFontSize(8); doc.setTextColor(...cGrayText);
+    doc.text("Schätzwert (Simulation)", 114, currentY + 24);
+
+    currentY += boxH + 15;
+
+    // === 5. INVENTARLISTE ===
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(...cBlueDark);
+    doc.text("INVENTARLISTE", 20, currentY);
+    
+    // Daten vorbereiten
     const tableData = [];
     const groupedCounts = {};
     const itemNames = {};
@@ -1084,29 +1203,110 @@ window.app.exportPDF = async function() {
         const type = obj.userData.typeId;
         const name = ASSETS.furniture[type].name;
         const note = obj.userData.annotation || "";
-        
         if (!note) {
             groupedCounts[type] = (groupedCounts[type] || 0) + 1;
             itemNames[type] = name;
         } else {
-            tableData.push([name, note]);
+            tableData.push([name, "1", note]);
         }
     });
 
     for (const [type, count] of Object.entries(groupedCounts)) {
-        tableData.push([`${itemNames[type]} (${count}x)`, "-"]);
+        tableData.push([itemNames[type], count.toString(), "-"]);
     }
     tableData.sort((a, b) => a[0].localeCompare(b[0]));
 
-    doc.autoTable({ 
-        head: [['Möbelstück', 'Anmerkung']], 
-        body: tableData, 
-        startY: currentY + 5, 
-        theme: 'striped', 
-        headStyles: { fillColor: [0, 48, 93] } 
+    doc.autoTable({
+        startY: currentY + 3,
+        head: [['OBJEKT', 'ANZ.', 'ANMERKUNG']],
+        body: tableData,
+        theme: 'plain',
+        headStyles: { 
+            fillColor: cBlueDark, 
+            textColor: 255, 
+            fontStyle: 'bold', 
+            fontSize: 9,
+            cellPadding: 4
+        },
+        bodyStyles: {
+            textColor: [50, 50, 50],
+            fontSize: 9,
+            cellPadding: 4,
+            lineColor: [230, 230, 230],
+            lineWidth: 0.1
+        },
+        columnStyles: { 
+            0: { cellWidth: 80, fontStyle: 'bold' }, 
+            1: { cellWidth: 20, halign: 'center' },
+            2: { cellWidth: 'auto', fontStyle: 'italic', textColor: [100, 100, 100] } 
+        },
+        margin: { left: 20, right: 20 },
+        didParseCell: function(data) {
+            if (data.section === 'body') {
+                data.cell.styles.borderBottomWidth = 0.1;
+            }
+        }
     });
 
-    doc.save("raumplan_export.pdf");
+    // === 6. FOOTER / LLR INFO ===
+    let finalY = doc.lastAutoTable.finalY + 15;
+    const pageHeight = doc.internal.pageSize.height;
+    
+    // Wenn weniger als 60mm Platz ist -> Neue Seite
+    if (pageHeight - finalY < 60) {
+        doc.addPage();
+        finalY = 30;
+    } else {
+        // Schiebe Footer nach unten, aber nicht tiefer als bottom margin
+        finalY = Math.max(finalY, pageHeight - 65);
+    }
+
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.5);
+    doc.line(20, finalY, 190, finalY);
+    
+    let textY = finalY + 10;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...cBlueDark);
+    doc.text("Lehr-Lern-Raum Inklusion (LLR) @ TU Dresden", 20, textY);
+    
+    textY += 5;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...cGrayText);
+    doc.text("Zellescher Weg 20, Seminargebäude II, Raum 21", 20, textY);
+    
+    textY += 7;
+    doc.setTextColor(...cBlueLight);
+    const urlWeb = "https://tu-dresden.de/zlsb/lehramtsstudium/im-studium/studienunterstuetzende-angebote/inklusionsraums";
+    doc.textWithLink(">> Webseite besuchen (tu-dresden.de/...)", 20, textY, { url: urlWeb });
+
+    textY += 10;
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("helvetica", "bold");
+    doc.text("Materialien & Kurse:", 20, textY);
+    
+    textY += 5;
+    const urlOpal = "https://bildungsportal.sachsen.de/opal/auth/RepositoryEntry/20508278784/CourseNode/1614569282320629";
+    doc.setTextColor(...cBlueLight);
+    doc.setFont("helvetica", "normal");
+    doc.textWithLink(">> Zum OPAL-Kurs wechseln", 20, textY, { url: urlOpal });
+    
+    // === 7. PAGE NUMBERS ===
+    const pageCount = doc.internal.getNumberOfPages();
+    for(let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(180, 180, 180);
+        doc.text(`Seite ${i} von ${pageCount}`, 105, 290, { align: 'center' });
+    }
+
+    // Speichern
+    const safeName = roomName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    doc.save(`Raumplan_${safeName}_${Date.now()}.pdf`);
+    
     toggleLoader(false);
 };
 
