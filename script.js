@@ -1009,11 +1009,27 @@ window.app.checkAccessibility = function() {
 window.app.savePlan = function() {
     const data = {
         room: currentRoomFile,
-        furniture: movableObjects.map(obj => ({ typeId: obj.userData.typeId, x: obj.position.x, z: obj.position.z, rot: obj.rotation.y, annotation: obj.userData.annotation || "" }))
+        furniture: movableObjects.map(obj => ({ 
+            typeId: obj.userData.typeId, 
+            x: obj.position.x, 
+            z: obj.position.z, 
+            rot: obj.rotation.y, 
+            annotation: obj.userData.annotation || "" 
+        }))
     };
+    
+    // Inhalt bleibt JSON
     const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'raumplan.json'; a.click();
+    const a = document.createElement('a'); 
+    
+    a.href = url; 
+    a.download = 'raumplan.elmeks'; 
+    
+    a.click();
+    
+    // Feedback für Nutzer
+    showNotification("Plan als .elmeks gespeichert.");
 };
 
 window.app.loadFromFile = function(input) {
