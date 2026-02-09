@@ -130,14 +130,28 @@
       }
 
       /* Animierter Gradient Titel */
+      /* Animierter Gradient Titel */
       .home-title-large {
           font-size: 3.5em; font-weight: 800; color: white;
-          margin: 0 0 15px 0; letter-spacing: -1.5px; line-height: 1;
+          /* FIX: Line-height erhöht und Padding unten hinzugefügt für das 'g' */
+          line-height: 1.2; 
+          padding-bottom: 10px;
+          margin: 0 0 5px 0; 
+          letter-spacing: -1.5px; 
+          
           background: linear-gradient(90deg, #ffffff 0%, #a5c9ff 50%, #ffffff 100%);
           background-size: 200% auto;
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           animation: shine 5s linear infinite;
+      }
+      
+      /* Style für Tasten-Kürzel im neuen Hilfebereich */
+      .key-badge {
+          display: inline-block; padding: 2px 6px; 
+          background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); 
+          border-radius: 4px; font-family: monospace; font-size: 11px; color: #fff;
+          margin-right: 5px;
       }
       @keyframes shine { to { background-position: 200% center; } }
 
@@ -438,14 +452,152 @@
       #notification.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
       #notification::before { content: "ℹ"; display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: var(--primary); color: white; border-radius: 50%; font-size: 11px; font-weight: bold; }
 
-      /* Filters */
+      /* === FILTERS & NEURODIVERSITÄT === */
+      
+      /* Basis-Filter via Klasse auf Body */
       body.sim-blur canvas { filter: blur(4px) contrast(1.2); }
       body.sim-severe canvas { filter: blur(8px) contrast(0.8) brightness(0.7); }
       body.sim-blind canvas { filter: brightness(0); background: black; }
-      #vision-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 9000; background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.95) 40%, black 70%); display: none; }
-      body.sim-tunnel #vision-overlay { display: block; }
+      
+      /* NEUE Filter-Klassen (Erweitert) */
+      body.sim-cataract canvas { filter: blur(2px) contrast(0.7) brightness(1.1) sepia(0.2); } /* Milchig */
+      body.sim-photophobia canvas { filter: brightness(1.4) contrast(1.2) saturate(0.5); } /* Überbelichtet */
+      body.sim-cvi canvas { filter: contrast(0.6) saturate(0.8) blur(1px); } /* "Flaches" Bild */
+      body.sim-achromatopsia canvas { filter: grayscale(100%) contrast(1.2); } /* SW */
+      body.sim-glaucoma canvas { filter: blur(3px) brightness(0.9); } /* Trüb + Tunnel */
+      body.sim-nyctalopia canvas { filter: brightness(0.4) contrast(1.5) grayscale(0.8); } /* Nachtblindheit */
+
+      /* SVG-Filter Einbindung */
+      body.sim-protanopia canvas { filter: url(#filter-protanopia); }
+      body.sim-deuteranopia canvas { filter: url(#filter-deuteranopia); }
+      body.sim-tritanopia canvas { filter: url(#filter-tritanopia); }
+      body.sim-diplopia canvas { filter: url(#filter-diplopia); }
+      body.sim-metamorphopsia canvas { filter: url(#filter-metamorphopsia); } /* Verzerrt */
+
+      /* Container für Overlays */
+      #vision-overlay-container { 
+          position: absolute; inset: 0; pointer-events: none; z-index: 5; display: none; 
+      }
+      
+      /* Overlay-Sichtbarkeit steuern */
+      body.sim-tunnel #vision-overlay-container,
+      body.sim-noise #vision-overlay-container,
+      body.sim-spot #vision-overlay-container,
+      body.sim-scotoma #vision-overlay-container,
+      body.sim-hemi #vision-overlay-container,
+      body.sim-hemi-l #vision-overlay-container,
+      body.sim-quadrant #vision-overlay-container,
+      body.sim-ring #vision-overlay-container,
+      body.sim-retina #vision-overlay-container,
+      body.sim-glaucoma #vision-overlay-container,
+      body.sim-crowding #vision-overlay-container { display: block; }
+
+      /* --- OVERLAY DEFINITIONEN --- */
+
+      /* 1. Tunnelblick (Röhre) */
+      #vision-tunnel {
+        position: absolute; inset: 0; display: none;
+        background: radial-gradient(circle at 50% 50%, transparent 15%, rgba(0,0,0,0.95) 30%, black 65%);
+      }
+      body.sim-tunnel #vision-tunnel, body.sim-glaucoma #vision-tunnel { display: block; }
+
+      /* 2. Rauschen */
+      #vision-noise {
+        position: absolute; top: -100%; left: -100%; width: 300%; height: 300%;
+        opacity: 0.15; pointer-events: none; display: none;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      }
+      body.sim-noise #vision-noise { display: block; animation: noiseAnim 0.2s steps(4) infinite; }
+
+      /* 3. Makula (Zentral) */
+      #vision-spot {
+        position: absolute; inset: 0; display: none;
+        background: radial-gradient(circle at 50% 50%, rgba(0,0,0,0.98) 5%, rgba(0,0,0,0.8) 15%, transparent 45%);
+      }
+      body.sim-spot #vision-spot { display: block; }
+
+      /* 4. Parazentrales Skotom (Inseln neben Zentrum) */
+      #vision-scotoma {
+        position: absolute; inset: 0; display: none;
+        background: radial-gradient(circle at 40% 45%, rgba(0,0,0,0.9) 2%, transparent 8%),
+                    radial-gradient(circle at 60% 55%, rgba(0,0,0,0.9) 3%, transparent 10%);
+      }
+      body.sim-scotoma #vision-scotoma { display: block; }
+
+      /* 5. Hemianopsie RECHTS */
+      #vision-hemi {
+        position: absolute; inset: 0; display: none;
+        background: linear-gradient(to right, transparent 50%, black 50.5%);
+      }
+      body.sim-hemi #vision-hemi { display: block; }
+
+      /* 6. Hemianopsie LINKS */
+      #vision-hemi-l {
+        position: absolute; inset: 0; display: none;
+        background: linear-gradient(to left, transparent 50%, black 50.5%);
+      }
+      body.sim-hemi-l #vision-hemi-l { display: block; }
+
+      /* 7. Quadrantenanopsie (Oben Rechts) */
+      #vision-quadrant {
+        position: absolute; inset: 0; display: none;
+        background: linear-gradient(to right, transparent 50%, black 50.5%),
+                    linear-gradient(to bottom, transparent 50%, black 50.5%);
+        background-blend-mode: multiply; /* Nur das Viertel wird schwarz, wo beide sich treffen? Nein, das wäre falsch. */
+        /* Einfacheres CSS für Quadrant oben rechts: Clip-Path oder Gradient-Trick */
+        background: conic-gradient(from 0deg at 50% 50%, black 0deg 90deg, transparent 90deg 360deg);
+      }
+      body.sim-quadrant #vision-quadrant { display: block; }
+
+      /* 8. Ringskotom */
+      #vision-ring {
+        position: absolute; inset: 0; display: none;
+        background: radial-gradient(circle at 50% 50%, transparent 20%, black 30%, black 50%, transparent 60%);
+      }
+      body.sim-ring #vision-ring { display: block; }
+
+      /* 9. Retinopathie (Flecken) */
+      #vision-retina {
+        position: absolute; inset: 0; display: none;
+        background: 
+            radial-gradient(circle at 20% 30%, black 2%, transparent 10%),
+            radial-gradient(circle at 80% 20%, black 3%, transparent 12%),
+            radial-gradient(circle at 40% 70%, black 4%, transparent 15%),
+            radial-gradient(circle at 70% 80%, black 2%, transparent 10%),
+            radial-gradient(circle at 50% 50%, transparent 40%, rgba(0,0,0,0.4) 100%);
+      }
+      body.sim-retina #vision-retina { display: block; }
+      
+      /* 10. Crowding (Vignette Randunschärfe simulieren) */
+      #vision-crowding {
+         position: absolute; inset: 0; display: none;
+         box-shadow: inset 0 0 150px 50px rgba(0,0,0,0.7);
+      }
+      body.sim-crowding #vision-crowding { display: block; }
+
+      @keyframes noiseAnim {
+        0% { transform: translate(0,0); } 10% { transform: translate(-5%,-5%); }
+        20% { transform: translate(-10%,5%); } 30% { transform: translate(5%,-10%); }
+        40% { transform: translate(-5%,15%); } 50% { transform: translate(-10%,5%); }
+        60% { transform: translate(15%,0); } 70% { transform: translate(0,10%); }
+        80% { transform: translate(-15%,0); } 90% { transform: translate(10%,5%); }
+        100% { transform: translate(5%,0); }
+      }
+
       .vision-hint { font-size: 11px; color: var(--warning); margin-bottom: 8px; font-style: italic; background: rgba(245, 158, 11, 0.1); padding: 8px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.2); }
       
+      /* NEU: Style für Lehrkraft-Tipps im Glossar */
+      #glossary-tip {
+          margin-top: 10px;
+          padding: 8px 10px;
+          background: rgba(59, 130, 246, 0.1); /* Leichtes Blau */
+          border-left: 3px solid var(--primary);
+          border-radius: 0 4px 4px 0;
+          font-size: 11px;
+          color: #dbeafe; /* Helles Blau-Weiß */
+          display: none; /* Standardmäßig aus */
+      }
+      #glossary-tip strong { display: block; color: var(--primary); margin-bottom: 2px; text-transform: uppercase; font-size: 9px; letter-spacing: 0.5px; }
       .tutorial-highlight { position: relative; z-index: 9001; box-shadow: 0 0 0 4px var(--primary), 0 0 20px var(--primary-glow) !important; border-color: var(--primary) !important; }
 
       /* === HOCHKONTRAST MODUS FIX === */
@@ -608,51 +760,46 @@
         <!-- Rechte Seite: Features & Settings -->
         <div class="home-right stagger-3">
             
-            <!-- Ausblick -->
             <div class="feature-box">
-                <div class="section-label">Features & Roadmap</div>
+                <div class="section-label">Steuerung & Shortcuts</div>
                 <ul class="feature-list">
                     <li class="feature-item">
-                        <div class="icon-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></div>
+                        <div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg></div>
                         <div>
-                            <strong>Lichtsimulation</strong>
-                            Blendgefahr-Erkennung (< 30° Blickwinkel).
+                            <strong>Objekt bewegen</strong>
+                            Linke Maustaste gedrückt halten & ziehen.
                         </div>
                     </li>
                     <li class="feature-item">
-                        <div class="icon-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></div>
+                        <div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></div>
                         <div>
-                            <strong>Seh-Simulation</strong>
-                            Filter für Visus-Verlust & Gesichtsfeld.
+                            <strong>Kamera / Objekt drehen</strong>
+                            Rechte Maustaste (Kamera) oder Taste <span class="key-badge">R</span> (Objekt).
+                        </div>
+                    </li>
+                    <li class="feature-item">
+                        <div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
+                        <div>
+                            <strong>Löschen</strong>
+                            Objekt wählen und <span class="key-badge">Entf</span> drücken.
                         </div>
                     </li>
                 </ul>
             </div>
 
-            <!-- Mini Settings -->
             <div class="feature-box stagger-4">
-                <div class="section-label">Schnell-Einstellungen</div>
+                <div class="section-label">Barrierefreiheit</div>
                 <div class="settings-mini">
-                    <div class="mini-row">
-                        <span>Hochkontrast</span>
+                    <div class="mini-row" style="margin-bottom:0;">
+                        <span>Hochkontrast-Modus</span>
                         <label class="switch"><input type="checkbox" id="start-high-contrast" onchange="app.updateSettings()"><span class="slider"></span></label>
-                    </div>
-                    <div class="mini-row">
-                        <span>Farbfilter</span>
-                        <select id="start-color-filter" onchange="app.updateSettings()" style="background:#0f1012; border:1px solid #374151; color:white; padding:4px; border-radius:4px; font-size:12px;">
-                            <option value="none">Keiner</option>
-                            <option value="grayscale">Graustufen</option>
-                            <option value="sepia">Sepia</option>
-                            <option value="invert">Invertiert</option>
-                        </select>
                     </div>
                 </div>
             </div>
 
-            <!-- Feedback Footer -->
             <div class="feedback-area">
                 Haben Sie Ideen oder Wünsche? <br>
-                <a href="mailto:thepytales@gmail.com" class="feedback-link">Schreiben Sie uns!</a>
+                <a href="mailto:dominik.toepper@tu-dresden.de" class="feedback-link">dominik.toepper@tu-dresden.de</a>
             </div>
 
         </div>
@@ -728,7 +875,7 @@
             <div class="item-grid">
               <button onclick="app.addFurniture('row_combo')">Tisch+Stuhl</button>
               <button onclick="app.addFurniture('chair')">Stuhl</button>
-              <button onclick="app.addFurniture('tano')">Asymmetrisch</button>
+              <button onclick="app.addFurniture('tano')">Tano-Tisch</button>
               <button onclick="app.addFurniture('triangle')">Dreieck</button>
               <button onclick="app.addFurniture('table_square')">Quadrat-Tisch</button>
               <button onclick="app.addFurniture('table_double')">2er Tisch</button>
@@ -796,7 +943,7 @@
       <div class="sidebar-right">
         <!-- Panel 1: Avatar & Simulation -->
         <div class="panel">
-          <div class="panel-header" onclick="togglePanel(this)">Avatar & Perspektive</div>
+          <div class="panel-header" onclick="togglePanel(this)">Visuelle Simulation</div>
           <div class="panel-content">
             
             <!-- 1. Avatar Setzen -->
@@ -819,16 +966,68 @@
                 </button>
 
                 <!-- Settings für Sehschwäche -->
-                <div id="vision-settings-panel" style="display:none; margin-top:15px; background:rgba(0,0,0,0.2); padding:12px; border-radius:6px; border:1px solid #374151;">
-                    <label style="color:var(--primary); font-size:11px; text-transform:uppercase; font-weight:700; display:block; margin-bottom:6px;">Visus / Grad</label>
-                    <select id="vision-select-right" style="width:100%" onchange="app.setVisionSeverity(this.value)">
-                        <option value="normal" selected>Keine (Normal)</option>
-                        <option value="low">Sehbehindert (Visus &lt; 0.3)</option>
-                        <option value="severe">Hochgradig (Visus &lt; 0.05)</option>
-                        <option value="blind">Blindheit (Visus &lt; 0.02)</option>
-                    </select>
-                    <div id="vision-desc" style="font-size:11px; color:#9ca3af; margin-top:8px; font-style:italic; line-height:1.4;">
-                        Normale Sicht.
+                <div id="vision-settings-panel" style="display:none; margin-top:15px; background:rgba(0,0,0,0.2); padding:0; border-radius:8px; border:1px solid #374151; overflow:hidden;">
+                    
+                    <div style="padding:12px; border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <label style="color:var(--primary); font-size:11px; text-transform:uppercase; font-weight:700; display:block; margin-bottom:6px;">Visus (Sehschärfe)</label>
+                        <select id="vision-select-right" style="width:100%; font-size:13px; padding:8px;" onchange="app.setVisionSeverity(this.value)">
+                            <option value="normal" selected>Normal (100%)</option>
+                            <option value="low">Sehbehindert (&lt; 30%)</option>
+                            <option value="severe">Hochgradig (&lt; 5%)</option>
+                            <option value="blind">Blindheit (Voll)</option>
+                        </select>
+                    </div>
+
+                    <div id="neuro-section" style="background:rgba(0,0,0,0.1); padding:12px;">
+                        <label style="color:#6b7280; font-size:10px; font-weight:700; display:block; margin-bottom:8px; letter-spacing:0.5px;">SIMULATION WÄHLEN</label>
+                        
+                        <select id="sim-select" style="width:100%; font-size:13px; padding:8px; margin-bottom:10px;" onchange="app.setSimulationMode(this.value)">
+                            <option value="none" selected>-- Keine Simulation --</option>
+                            
+                            <optgroup label="Gesichtsfeld (Strukturell)">
+                                <option value="tunnel">Tunnelblick (RP)</option>
+                                <option value="spot">Makula (Zentral)</option>
+                                <option value="scotoma">Parazentralskotom</option>
+                                <option value="hemi">Hemianopsie (Rechts)</option>
+                                <option value="hemi-l">Hemianopsie (Links)</option>
+                                <option value="quadrant">Quadrantenanopsie</option>
+                                <option value="ring">Ringskotom</option>
+                            </optgroup>
+                            
+                            <optgroup label="Licht & Trübung">
+                                <option value="cataract">Katarakt (Grauer Star)</option>
+                                <option value="glaucoma">Glaukom (Grüner Star)</option>
+                                <option value="photophobia">Photophobie (Blendung)</option>
+                                <option value="nyctalopia">Nachtblindheit</option>
+                                <option value="retina">Diabetische Retinopathie</option>
+                            </optgroup>
+
+                            <optgroup label="Neurologische Verarbeitung">
+                                <option value="cvi">CVI / Agnosie</option>
+                                <option value="crowding">Crowding / Neglect</option>
+                                <option value="metamorphopsia">Metamorphopsie (Verzerrt)</option>
+                                <option value="diplopia">Diplopie (Doppelbilder)</option>
+                                <option value="noise">Visuelles Rauschen</option>
+                            </optgroup>
+
+                            <optgroup label="Farbwahrnehmung">
+                                <option value="achromatopsia">Achromatopsie (SW)</option>
+                                <option value="protanopia">Rot-Blindheit</option>
+                                <option value="deuteranopia">Grün-Blindheit</option>
+                                <option value="tritanopia">Blau-Blindheit</option>
+                            </optgroup>
+                        </select>
+
+                        <div id="vision-glossary" style="background:#1f2937; border:1px solid #374151; border-radius:6px; padding:12px; margin-top:5px;">
+                            <div id="glossary-title" style="color:var(--primary); font-size:12px; font-weight:700; margin-bottom:6px;">Simulation inaktiv</div>
+                            <div id="glossary-text" style="color:#d1d5db; font-size:11px; line-height:1.5;">
+                                Wählen Sie oben eine Simulation aus, um Details zu sehen.
+                            </div>
+                            <div id="glossary-tip">
+                                <strong>Pädagogischer Hinweis:</strong>
+                                <span id="glossary-tip-text"></span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -879,7 +1078,18 @@
     </div>
     
     <!-- Overlay für Seh-Simulation -->
-    <div id="vision-overlay"></div>
+    <div id="vision-overlay-container">
+        <div id="vision-tunnel"></div>
+        <div id="vision-noise"></div>
+        <div id="vision-spot"></div>
+        <div id="vision-scotoma"></div>
+        <div id="vision-hemi"></div>
+        <div id="vision-hemi-l"></div>
+        <div id="vision-quadrant"></div>
+        <div id="vision-ring"></div>
+        <div id="vision-retina"></div>
+        <div id="vision-crowding"></div>
+    </div>
     <script type="module" src="script.js"></script>
 
     <!-- HINTERGRUND SCRIPT -->
@@ -995,6 +1205,27 @@
           animate();
       })();
     </script>
+    <svg style="position: absolute; height: 0; width: 0; overflow: hidden;">
+      <defs>
+        <filter id="filter-protanopia"><feColorMatrix type="matrix" values="0.567,0.433,0,0,0 0.558,0.442,0,0,0 0,0.242,0.758,0,0 0,0,0,1,0" /></filter>
+        <filter id="filter-deuteranopia"><feColorMatrix type="matrix" values="0.625,0.375,0,0,0 0.7,0.3,0,0,0 0,0.3,0.7,0,0 0,0,0,1,0" /></filter>
+        <filter id="filter-tritanopia"><feColorMatrix type="matrix" values="0.95,0.05,0,0,0 0,0.433,0.567,0,0 0,0.475,0.525,0,0 0,0,0,1,0" /></filter>
+        
+        <filter id="filter-diplopia">
+            <feOffset in="SourceGraphic" dx="15" dy="-5" result="ghost"/>
+            <feComponentTransfer in="ghost" result="ghostFade">
+                <feFuncA type="linear" slope="0.5"/>
+            </feComponentTransfer>
+            <feMerge>
+                <feMergeNode in="SourceGraphic"/>
+                <feMergeNode in="ghostFade"/>
+            </feMerge>
+        </filter>
+        <filter id="filter-metamorphopsia">
+            <feTurbulence type="turbulence" baseFrequency="0.01 0.02" numOctaves="1" result="turbulence" />
+            <feDisplacementMap in2="turbulence" in="SourceGraphic" scale="15" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </defs>
+    </svg>
   </body>
 </html>
-

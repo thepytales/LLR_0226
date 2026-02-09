@@ -16,6 +16,140 @@ const FURNITURE_Y_OFFSET = 0.22; // Standardhöhe für Möbel
 const VISION_LAYER_HEIGHT = 2.2; 
 const TOP_VIEW_HEIGHT = 18; 
 
+// Glossar Texte & Pädagogische Tipps
+const SIM_GLOSSARY = {
+    // Visus
+    normal: { title: "Normale Sicht", text: "Keine Einschränkungen aktiv.", tip: "" },
+    low: { 
+        title: "Sehbehinderung", 
+        text: "Visus < 0.3. Details an der Tafel oder in Büchern sind nur schwer erkennbar. Vergrößerungshilfen sind nötig.", 
+        tip: "Vergrößerte Arbeitsblätter (A3) anbieten. Tafelbild verbalisieren (alles laut vorlesen). Sitzplatz nah an der Tafel." 
+    },
+    severe: { 
+        title: "Hochgradige Sehbehinderung", 
+        text: "Visus < 0.05. Orientierung ist noch möglich, aber Lesen normaler Schrift ist unmöglich.", 
+        tip: "Digitale Hilfsmittel (Tablet mit Zoom/VoiceOver) zulassen. Taktile Leitsysteme im Raum freihalten. Starke Kontraste nutzen." 
+    },
+    blind: { 
+        title: "Blindheit", 
+        text: "Visus < 0.02. Visuelle Informationen fehlen fast vollständig. Tast- und Hörsinn sind entscheidend.", 
+        tip: "Fester Sitzplatz (Orientierung). Materialien digital barrierefrei oder in Braille bereitstellen. Laufwege zwingend freihalten!" 
+    },
+
+    // Gesichtsfeld
+    tunnel: { 
+        title: "Tunnelblick (RP)", 
+        text: "Verlust der Peripherie (Röhrensehen). Orientierung im Raum ist massiv erschwert, zentrales Lesen oft noch gut möglich.", 
+        tip: "Ordnung halten! Taschen gehören nicht in den Gang (Stolperfallen). Schüler zentral vor die Tafel setzen (nicht seitlich)." 
+    },
+    spot: { 
+        title: "Makuladegeneration (AMD)", 
+        text: "Zentraler Ausfall. Gesichter und Texte können nicht fixiert werden. Orientierung im Raum funktioniert über peripheres Sehen.", 
+        tip: "Schüler schaut oft 'daneben', um zu sehen – das ist kein Desinteresse! Vergrößerung hilft oft nicht (fällt in den toten Winkel)." 
+    },
+    scotoma: { 
+        title: "Parazentralskotom", 
+        text: "Inselförmige Ausfälle neben dem Zentrum. Buchstaben oder Wörter 'springen' oder fehlen beim Lesen.", 
+        tip: "Geduld beim Lesen. Serifenlose, klare Schriftarten (Arial, Verdana) mit erhöhtem Zeilenabstand nutzen." 
+    },
+    hemi: { 
+        title: "Hemianopsie (Rechts)", 
+        text: "Rechtsseitiger Ausfall (z. B. nach Schlaganfall). Die rechte Hälfte der Welt fehlt.", 
+        tip: "Sitzplatz LINKS im Raum wählen, damit das Geschehen im gesunden (linken) Sichtfeld liegt. Schüler nicht von rechts ansprechen." 
+    },
+    'hemi-l': { 
+        title: "Hemianopsie (Links)", 
+        text: "Linksseitiger Ausfall. Die linke Hälfte der Welt fehlt.", 
+        tip: "Sitzplatz RECHTS im Raum wählen. Achtung bei Gruppenarbeit: Partner sollte rechts sitzen." 
+    },
+    quadrant: { 
+        title: "Quadrantenanopsie", 
+        text: "Ausfall eines Viertels (hier oben rechts). Kann beim Blick auf die Tafel stören.", 
+        tip: "Tafelbild kompakt halten. Prüfen, ob der Schüler den oberen Tafelrand sehen kann, ohne den Kopf extrem zu verrenken." 
+    },
+    ring: { 
+        title: "Ringskotom", 
+        text: "Ein blinder Ring um das Zentrum. Objekte verschwinden beim Näherkommen kurzzeitig.", 
+        tip: "Vorsicht im Sportunterricht (Bälle verschwinden plötzlich). Klare Absprachen bei Bewegungen im Raum." 
+    },
+
+    // Licht & Trübung
+    cataract: { 
+        title: "Katarakt (Grauer Star)", 
+        text: "Trübung der Linse. Alles wirkt milchig. Hohe Blendempfindlichkeit bei Gegenlicht.", 
+        tip: "Platz mit Rücken zum Fenster. Jalousien nutzen, um Blendung auf der Tafel zu vermeiden. Hohe Kontraste an der Tafel (Schwarz auf Weiß)." 
+    },
+    glaucoma: { 
+        title: "Glaukom (Grüner Star)", 
+        text: "Schleichender Prozess. Oft Mischung aus Gesichtsfeldausfällen und Nebel.", 
+        tip: "Stressfreies Sehumfeld schaffen. Pausen für die Augen einplanen. Gute, blendfreie Raumbeleuchtung sicherstellen." 
+    },
+    photophobia: { 
+        title: "Extreme Photophobie", 
+        text: "Lichtschmerz (z. B. Albinismus). Normale Raumbeleuchtung blendet massiv. Kontraste verschwinden.", 
+        tip: "Dunkelster Platz im Raum (Ecke). Erlaubnis für Sonnenbrille/Kappi im Unterricht. 'Dark Mode' auf Tablets nutzen." 
+    },
+    nyctalopia: { 
+        title: "Nachtblindheit", 
+        text: "Sehversagen bei Dämmerung. Im dunklen Klassenzimmer (Beamer) orientierungslos.", 
+        tip: "Bei Filmvorführungen/Beamer-Einsatz: Schüler nicht im Raum umherlaufen lassen. Kleine Platzbeleuchtung erlauben." 
+    },
+    retina: { 
+        title: "Diabetische Retinopathie", 
+        text: "Fleckige Ausfälle (Skotome) im ganzen Bild. Tagesform schwankt stark.", 
+        tip: "Flexibilität bei der Leistungserwartung (Tagesform). Kopien in sehr guter Qualität (keine blassen Matrizen)." 
+    },
+
+    // Neuro & Verarbeitung
+    cvi: { 
+        title: "CVI (Zerebrale Sehstörung)", 
+        text: "Gehirn kann Reize nicht verarbeiten. 'Wimmelbilder' (voller Raum) führen zu Stress/Orientierungsverlust.", 
+        tip: "Reizreduktion! Arbeitsblätter entschlacken (nur eine Aufgabe pro Seite). Ruhiger Sitzplatz (Wandblick, nicht in den Raum)." 
+    },
+    crowding: { 
+        title: "Crowding / Neglect", 
+        text: "Visuelle Überfüllung. Eng stehende Objekte/Buchstaben verschmelzen.", 
+        tip: "Größerer Buchstabenabstand und Zeilenabstand. Abdeckschablone beim Lesen nutzen, um Nachbarzeilen auszublenden." 
+    },
+    metamorphopsia: { 
+        title: "Metamorphopsie", 
+        text: "Verzerrtsehen. Gerade Linien (Tafel, Karopapier) wirken wellig. Lesen/Schreiben erschwert.", 
+        tip: "Linienverstärktes Papier anbieten. Schreiben am Tablet erlauben (Zoom/Raster hilft)." 
+    },
+    diplopia: { 
+        title: "Diplopie (Doppelbilder)", 
+        text: "Bilder decken sich nicht. Führt zu Kopfschmerzen, Übelkeit und Greif-Fehlern.", 
+        tip: "Schüler ermüdet schnell (Kopfschmerz). Leseportionen einteilen. Beim Experimentieren (Chemie/Physik) Assistenz stellen." 
+    },
+    noise: { 
+        title: "Visual Snow", 
+        text: "Dauerhaftes Bildrauschen ('Schnee'). Senkt Kontraste und erhöht die Konzentrationslast.", 
+        tip: "Kognitive Pausen. Vermeidung von stark gemusterten Hintergründen auf Arbeitsblättern/Tafeln." 
+    },
+
+    // Farbe
+    achromatopsia: { 
+        title: "Achromatopsie", 
+        text: "Totale Farbenblindheit. Oft verbunden mit hoher Lichtempfindlichkeit.", 
+        tip: "Niemals Informationen nur über Farbe codieren! Immer Muster oder Beschriftungen nutzen (z.B. in Diagrammen)." 
+    },
+    protanopia: { 
+        title: "Protanopie (Rot-Blind)", 
+        text: "Rot wird nicht wahrgenommen. Ampeln/Warnhinweise wirken dunkelgrau.", 
+        tip: "Achtung bei Korrekturen (Roter Stift ist schwer lesbar). Rot nicht als Signalfarbe an der Tafel nutzen." 
+    },
+    deuteranopia: { 
+        title: "Deuteranopie (Grün-Blind)", 
+        text: "Rot und Grün sind schwer zu unterscheiden. Relevant für Landkarten.", 
+        tip: "Farbige Kreide an der Tafel vermeiden (Kontrast zu Grün/Grau schlecht). Landkarten beschriften statt färben." 
+    },
+    tritanopia: { 
+        title: "Tritanopie (Blau-Blind)", 
+        text: "Blau und Gelb werden verwechselt. Selten.", 
+        tip: "Farbcodierungen in Unterrichtsmaterialien prüfen (nicht Gelb auf Weiß oder Blau auf Grün)." 
+    }
+};
+
 // Einstellungen
 let settings = {
     controlsEnabled: true, 
@@ -121,8 +255,16 @@ let historyStack = [];
 
 // Vision / Simulation Status
 let isVisionAnalysisMode = false;   
-let visionConeMesh = null;          
-let currentVisionSeverity = 'normal'; 
+let visionConeMesh = null;
+let neuroFilters = { 
+    tunnel: false, noise: false, spot: false, hemi: false, 
+    'hemi-l': false, retina: false, detachment: false,
+    cataract: false, glaucoma: false, photophobia: false,
+    cvi: false, diplopia: false, achromatopsia: false
+}; 
+let colorBlindnessMode = 'none';         
+let currentVisionSeverity = 'normal';
+let currentSimulationMode = 'none'; 
 let tutorialStep = 0;               
 
 // Raycasting & Maus
@@ -228,11 +370,14 @@ function startApp() {
 
 // === HOMESCREEN & NAVIGATION ===
 window.app.startSession = function() {
+    // FIX: Zuerst Settings synchronisieren, solange Homescreen noch sichtbar ist!
+    // Das überträgt die Auswahl (z.B. Hochkontrast) vom Home-Menu in die App.
+    app.updateSettings(); 
+
     const home = document.getElementById('homescreen');
     if(home) home.style.display = 'none';
     const ui = document.getElementById('ui-layer');
     if(ui) ui.style.display = 'flex'; 
-    app.updateSettings(); 
 };
 
 window.app.confirmGoHome = function() {
@@ -364,7 +509,13 @@ window.app.exitSimulationMode = function() {
         app.setCamera('top');
     }
     
-    // Controls zurücksetzen
+    // FIX: Rotation wieder erlauben
+    controls.enableRotate = true;
+    
+    // Komplett Reset
+    Object.keys(neuroFilters).forEach(k => neuroFilters[k] = false);
+    colorBlindnessMode = 'none';
+    
     controls.enabled = true; 
     controls.enableZoom = true;
     controls.enablePan = true;
@@ -377,7 +528,9 @@ window.app.exitSimulationMode = function() {
 
 function updateAvatarUI() {
     const isFP = isFirstPersonActive();
+    const modeActive = isFP || isVisionAnalysisMode; // Status prüfen
     const avatarExists = movableObjects.some(o => o.userData.isAvatar);
+    
     const btnSpawn = document.getElementById('btn-spawn-avatar');
     const groupControls = document.getElementById('avatar-controls-group');
     const hint = document.getElementById('vision-disabled-hint');
@@ -386,11 +539,18 @@ function updateAvatarUI() {
     const settingsPanel = document.getElementById('vision-settings-panel');
     const btnExit = document.getElementById('btn-exit-simulation');
 
+    // FIX: Wizard-Button deaktivieren
+    const wizBtn = document.querySelector('button[onclick="app.runWizard()"]');
+    if(wizBtn) {
+        wizBtn.disabled = modeActive;
+        wizBtn.style.opacity = modeActive ? "0.3" : "1";
+        wizBtn.style.cursor = modeActive ? "not-allowed" : "pointer";
+    }
+
     if (btnSpawn) {
         if (avatarExists) {
             btnSpawn.innerText = "Avatar entfernen";
             btnSpawn.classList.add('danger');
-            const modeActive = isFP || isVisionAnalysisMode;
             btnSpawn.disabled = modeActive; 
             btnSpawn.style.opacity = modeActive ? "0.3" : "1";
         } else {
@@ -425,35 +585,119 @@ function updateAvatarUI() {
         }
     }
 
-    if (btnExit) btnExit.style.display = (isFP || isVisionAnalysisMode) ? 'block' : 'none';
-    if (settingsPanel) settingsPanel.style.display = (isFP || isVisionAnalysisMode) ? 'block' : 'none';
+    if (btnExit) btnExit.style.display = modeActive ? 'block' : 'none';
+    if (settingsPanel) settingsPanel.style.display = modeActive ? 'block' : 'none';
 }
 
-// === VISION EFFEKTE & SHADER ===
+// === VISION EFFEKTE & NEURO-FILTER ===
+
+// Helper: Nur ein Akkordeon gleichzeitig offen halten
+window.app.handleAccordion = function(element) {
+    if (!element.open) {
+        // Wenn wir es gerade öffnen, schließen wir alle anderen
+        const groups = document.querySelectorAll('.sim-group');
+        groups.forEach(g => {
+            if (g !== element) g.removeAttribute('open');
+        });
+    }
+};
+
+// 1. Toggle Funktion (Exklusiv-Logik)
+window.app.toggleNeuroFilter = function(type) {
+    if(!isFirstPersonActive()) return;
+    
+    // Status merken
+    const wasActive = neuroFilters[type];
+    
+    // Alle Filter ausschalten (Werte auf false setzen)
+    Object.keys(neuroFilters).forEach(k => neuroFilters[k] = false);
+
+    // Gewählten Filter aktivieren, falls er vorher aus war
+    if (!wasActive) neuroFilters[type] = true;
+    
+    app.updateVisionEffects();
+};
+
+// 2. Farbblindheit setzen
+window.app.setColorBlindness = function(val) {
+    colorBlindnessMode = val;
+    app.updateVisionEffects();
+};
+
+// 3. Bestehende Sehschwäche-Funktion
 window.app.setVisionSeverity = function(val) {
     currentVisionSeverity = val;
     if (isVisionAnalysisMode && visionConeMesh) updateAnalysisRing();
     app.updateVisionEffects();
 };
 
+window.app.setSimulationMode = function(mode) {
+    currentSimulationMode = mode;
+    app.updateVisionEffects();
+};
+
+// 4. Haupt-Update Funktion
 window.app.updateVisionEffects = function() {
     const isFP = isFirstPersonActive();
-    document.body.classList.remove('sim-blur', 'sim-severe', 'sim-blind', 'sim-tunnel');
+    
+    // 1. Reset Classes
+    document.body.className = document.body.className.replace(/\bsim-\S+/g, "");
     if(scene.fog) scene.fog.density = 0;
 
-    if (!isFP) return;
+    // 2. UI-Sichtbarkeit
+    const neuroSection = document.getElementById('neuro-section');
+    if(neuroSection) neuroSection.style.display = isFP ? 'block' : 'none';
+
+    // 3. UI Sync (Dropdowns)
+    const simSelect = document.getElementById('sim-select');
+    if(simSelect) simSelect.value = currentSimulationMode;
+    const visusSelect = document.getElementById('vision-select-right');
+    if(visusSelect) visusSelect.value = currentVisionSeverity;
+
+    // ABBRUCH wenn nicht FP
+    if (!isFP) { return; }
 
     let fogDensity = 0;
-    const desc = document.getElementById('vision-desc');
-    let descText = "";
-
+    
+    // 4. Visus anwenden
     switch(currentVisionSeverity) {
-        case 'normal': fogDensity = 0; descText = "Normale Sehschärfe."; break;
-        case 'low': document.body.classList.add('sim-blur'); fogDensity = 0.05; descText = "Visus < 0.3 (Unscharf)."; break;
-        case 'severe': document.body.classList.add('sim-severe'); fogDensity = 0.15; descText = "Visus < 0.05 (Hochgradig)."; break;
-        case 'blind': document.body.classList.add('sim-blind'); fogDensity = 0.6; descText = "Blindheit."; break;
+        case 'low': document.body.classList.add('sim-blur'); fogDensity = 0.05; break;
+        case 'severe': document.body.classList.add('sim-severe'); fogDensity = 0.15; break;
+        case 'blind': document.body.classList.add('sim-blind'); fogDensity = 0.6; break;
     }
-    if(desc) desc.innerText = descText;
+
+    // 5. Simulation anwenden (Dropdown)
+    if (currentSimulationMode !== 'none') {
+        document.body.classList.add('sim-' + currentSimulationMode);
+    }
+
+    // 6. GLOSSAR & TIPP UPDATE
+    let glossKey = 'normal';
+    if (currentSimulationMode !== 'none') {
+        glossKey = currentSimulationMode;
+    } else if (currentVisionSeverity !== 'normal') {
+        glossKey = currentVisionSeverity;
+    }
+
+    const glossInfo = SIM_GLOSSARY[glossKey] || SIM_GLOSSARY.normal;
+    const gTitle = document.getElementById('glossary-title');
+    const gText = document.getElementById('glossary-text');
+    const gTipBox = document.getElementById('glossary-tip');
+    const gTipText = document.getElementById('glossary-tip-text');
+    
+    if(gTitle && gText) {
+        gTitle.innerText = glossInfo.title;
+        gText.innerText = glossInfo.text;
+        
+        // Tipp anzeigen, wenn vorhanden und nicht "normal"
+        if (glossInfo.tip && glossInfo.tip.length > 0) {
+            gTipBox.style.display = 'block';
+            gTipText.innerText = glossInfo.tip;
+        } else {
+            gTipBox.style.display = 'none';
+        }
+    }
+    
     if(scene.fog) scene.fog.density = fogDensity;
 };
 
@@ -464,6 +708,10 @@ window.app.toggleVisionAnalysis = function() {
     if (isVisionAnalysisMode) return; 
 
     isVisionAnalysisMode = true;
+    
+    // FIX: Rotation sperren, damit man nicht "unter" die Ebene schaut
+    controls.enableRotate = false;
+    
     updateAvatarUI();
     updateAnalysisRing();
     
@@ -635,22 +883,45 @@ window.app.toggleSettings = function() {
 };
 
 window.app.updateSettings = function() {
-    const getVal = (id1, id2, type='check') => {
-        const el1 = document.getElementById(id1);
-        const el2 = document.getElementById(id2);
-        if(type==='check') return (el1 && el1.checked) || (el2 && el2.checked);
-        if(type==='val') return (el1 ? el1.value : null) || (el2 ? el2.value : null);
-        return null;
+    const home = document.getElementById('homescreen');
+    // Wir prüfen, ob wir gerade auf dem Homescreen sind
+    const isHomeVisible = home && home.style.display !== 'none';
+
+    // Helper: Synchronisiert Werte zwischen Homescreen (Start) und App-Settings (Set)
+    // Gewinnt immer der Schalter, der gerade sichtbar ist.
+    const syncVal = (idApp, idHome, type='check') => {
+        const elApp = document.getElementById(idApp);
+        const elHome = document.getElementById(idHome);
+        
+        if (!elApp || !elHome) return false;
+
+        let val;
+        
+        if (isHomeVisible) {
+            // Wir sind auf dem Homescreen -> Homescreen ist der Boss
+            val = type === 'check' ? elHome.checked : elHome.value;
+            // Wert auf App-Element übertragen
+            if (type === 'check') elApp.checked = val; else elApp.value = val;
+        } else {
+            // Wir sind in der App -> App-Settings sind der Boss
+            val = type === 'check' ? elApp.checked : elApp.value;
+            // Wert auf Homescreen-Element übertragen (für Rückkehr)
+            if (type === 'check') elHome.checked = val; else elHome.value = val;
+        }
+        return val;
     };
 
-    settings.controlsEnabled = getVal('set-controls', 'start-controls');
-    settings.mouseSensitivity = parseFloat(getVal('set-rotate-speed', 'start-rotate-speed', 'val')) || 1.0;
-    settings.reducedMotion = getVal('set-reduced-motion', 'start-reduced-motion');
-    const highContrast = getVal('set-high-contrast', 'start-high-contrast');
-    const filterVal = getVal('set-color-filter', 'start-color-filter', 'val') || 'none';
+    // 1. Werte synchronisieren & abrufen
+    settings.controlsEnabled = syncVal('set-controls', 'start-controls');
+    settings.mouseSensitivity = parseFloat(syncVal('set-rotate-speed', 'start-rotate-speed', 'val')) || 1.0;
+    settings.reducedMotion = syncVal('set-reduced-motion', 'start-reduced-motion');
+    const highContrast = syncVal('set-high-contrast', 'start-high-contrast');
+    const filterVal = syncVal('set-color-filter', 'start-color-filter', 'val') || 'none';
 
+    // 2. CSS Klassen anwenden
     document.body.className = document.body.className.replace(/filter-\w+/g, ''); 
     document.body.classList.remove('high-contrast');
+    
     if(highContrast) document.body.classList.add('high-contrast');
     if(filterVal !== 'none') document.body.classList.add('filter-' + filterVal);
     
@@ -662,7 +933,7 @@ window.app.updateSettings = function() {
         controls.enableDamping = !settings.reducedMotion;
     }
     
-    // ONSCREEN CONTROLS LOGIK
+    // 3. On-Screen Controls Sichtbarkeit
     const osc = document.getElementById('onscreen-controls');
     if(osc) {
         const simActive = isFirstPersonActive() || isVisionAnalysisMode;
@@ -889,6 +1160,12 @@ function calcCircle(count, lx, lz) {
 }
 
 window.app.runWizard = async function() {
+    // FIX: Absturz verhindern - Keine Möbel während Simulation
+    if (isFirstPersonActive() || isVisionAnalysisMode) {
+        showNotification("Funktion in Simulation gesperrt.");
+        return;
+    }
+
     saveHistory();
     const scenario = document.getElementById('wizard-scenario').value;
     const count = parseInt(document.getElementById('wizard-count').value);
