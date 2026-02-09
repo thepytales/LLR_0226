@@ -7,7 +7,7 @@ let savedCameraState = { pos: new THREE.Vector3(), target: new THREE.Vector3() }
 
 // Design-Konstanten
 const DESIGN = { 
-    color: 0x00aaff, // Cyan Körper
+    color: 0x00aaff, // Cyan Körper (schematische Darstellung)
     headColor: 0xffffff, // Weißer Kopf
 };
 
@@ -137,7 +137,10 @@ export function toggleAvatar(scene, movableObjects, interactionMeshes) {
 
 /**
  * Schaltet zwischen Ich-Perspektive und normaler Ansicht um.
- * @param {THREE.Camera} camera 
+ * Positioniert die Kamera und speichert den alten Status.
+ * * FIX: Passt die OrbitControls-Winkel an, damit man in der 
+ * Ich-Perspektive auch nach oben schauen kann (Tafel/Decke).
+ * * @param {THREE.Camera} camera 
  * @param {THREE.OrbitControls} controls 
  */
 export function toggleAvatarView(camera, controls) {
@@ -156,7 +159,7 @@ export function toggleAvatarView(camera, controls) {
         savedCameraState.pos.copy(camera.position);
         savedCameraState.target.copy(controls.target);
 
-        // Avatar unsichtbar machen (damit man nicht in seinen eigenen Kopf schaut)
+        // Avatar unsichtbar machen
         if(visualGroup) visualGroup.visible = false;
 
         // Kamera auf Augenhöhe setzen
@@ -164,9 +167,14 @@ export function toggleAvatarView(camera, controls) {
         eyePos.y += 1.80; // Augenhöhe
         camera.position.copy(eyePos);
 
-        // Blickrichtung setzen (basierend auf Avatar Rotation)
+        // Blickrichtung setzen
         const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(currentAvatar.quaternion);
-        controls.target.copy(eyePos.clone().add(forward));
+        const targetPos = eyePos.clone().add(forward);
+        controls.target.copy(targetPos);
+        
+        // FIX: Winkel-Limitierung aufheben, damit man nach OBEN schauen kann
+        // Standard ist PI/2 (90°), wir erlauben jetzt fast PI (180°)
+        controls.maxPolarAngle = Math.PI - 0.1; 
         
         controls.update();
 
@@ -181,6 +189,9 @@ export function toggleAvatarView(camera, controls) {
         camera.position.copy(savedCameraState.pos);
         controls.target.copy(savedCameraState.target);
         
+        // FIX: Winkel-Limitierung wiederherstellen (nicht unter den Boden schauen)
+        controls.maxPolarAngle = Math.PI / 2 - 0.05;
+
         controls.update();
     }
 }
